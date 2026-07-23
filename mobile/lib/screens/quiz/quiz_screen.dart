@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/models/question_model.dart';
+import 'package:zaban/services/user_stats_service.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/shop_bottom_sheet.dart';
+import 'package:zaban/widgets/stats_header_bar.dart';
 
 class QuizScreen extends StatefulWidget {
   const QuizScreen({
@@ -18,27 +21,114 @@ class QuizScreen extends StatefulWidget {
 }
 
 class _QuizScreenState extends State<QuizScreen> {
+  final UserStatsService _statsService = userStatsService;
+
   int _index = 0;
   int _score = 0;
   bool _finished = false;
+  bool _shakeHearts = false;
+  bool _unitRewarded = false;
+  bool _processingAnswer = false;
 
   QuestionModel get _current => widget.questions[_index];
 
-  void _onAnswered(bool correct) {
-    if (correct) _score++;
-    Future<void>.delayed(const Duration(milliseconds: 450), () {
+  Future<void> _onAnswered(bool correct) async {
+    if (_processingAnswer) return;
+    _processingAnswer = true;
+
+    if (correct) {
+      _score++;
+    } else {
+      await _handleWrongAnswer();
       if (!mounted) return;
-      if (_index >= widget.questions.length - 1) {
-        setState(() => _finished = true);
-      } else {
-        setState(() => _index++);
+      if (!_statsService.isSuper && _statsService.hearts <= 0) {
+        _processingAnswer = false;
+        return;
       }
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    if (!mounted) return;
+
+    if (_index >= widget.questions.length - 1) {
+      await _finishQuiz();
+    } else {
+      setState(() {
+        _index++;
+        _processingAnswer = false;
+      });
+    }
+  }
+
+  Future<void> _handleWrongAnswer() async {
+    try {
+      final result = await _statsService.decreaseHeart();
+      if (!mounted) return;
+
+      // Super: hearts not deducted
+      if (result.infiniteHearts || result.heartDeducted == false) {
+        return;
+      }
+
+      setState(() => _shakeHearts = true);
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      if (mounted) setState(() => _shakeHearts = false);
+
+      if (_statsService.hearts <= 0 && mounted) {
+        await showShopBottomSheet(
+          context,
+          statsService: _statsService,
+          message: 'قلب‌هایت تمام شد! برای ادامه ترمیم کن.',
+        );
+        if (!mounted) return;
+        if (_statsService.hearts <= 0) {
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final message = e.toString().replaceFirst('Exception: ', '');
+      if (message.toLowerCase().contains('no hearts') ||
+          message.contains('heart')) {
+        await showShopBottomSheet(
+          context,
+          statsService: _statsService,
+          message: 'قلب‌هایت تمام شد!',
+        );
+        if (mounted && _statsService.hearts <= 0) {
+          Navigator.pop(context);
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text(message, style: GoogleFonts.vazirmatn()),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _finishQuiz() async {
+    if (!_unitRewarded) {
+      _unitRewarded = true;
+      try {
+        await _statsService.completeUnit();
+      } catch (_) {
+        // Reward is best-effort; quiz result still shows.
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _finished = true;
+      _processingAnswer = false;
     });
   }
 
   void _skipUnsupported() {
     if (_index >= widget.questions.length - 1) {
-      setState(() => _finished = true);
+      _finishQuiz();
     } else {
       setState(() => _index++);
     }
@@ -96,6 +186,14 @@ class _QuizScreenState extends State<QuizScreen> {
             ],
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: StatsHeaderBar(
+            statsService: _statsService,
+            shakeHearts: _shakeHearts,
+          ),
+        ),
+        const SizedBox(height: 10),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: ClipRRect(
@@ -162,6 +260,15 @@ class _QuizScreenState extends State<QuizScreen> {
               style: GoogleFonts.vazirmatn(
                 fontSize: 16,
                 color: AppColors.slate,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '+۲۰ 💎  |  Streak: ${_statsService.streak} 🔥',
+              style: GoogleFonts.vazirmatn(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.tealDeep,
               ),
             ),
             const SizedBox(height: 32),

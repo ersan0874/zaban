@@ -8,6 +8,12 @@ export enum QuestionType {
   CLOZE_TYPING = 'cloze_typing',
 }
 
+export enum QuestionDifficulty {
+  EASY = 'easy',
+  STANDARD = 'standard',
+  HARD = 'hard',
+}
+
 /** Multiple-choice: options list + optional stem metadata */
 export interface MultipleChoiceContent {
   options: string[];

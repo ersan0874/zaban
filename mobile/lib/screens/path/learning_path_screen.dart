@@ -5,7 +5,12 @@ import 'package:zaban/data/sample_data.dart';
 import 'package:zaban/models/path_node_model.dart';
 import 'package:zaban/screens/quiz/quiz_screen.dart';
 import 'package:zaban/screens/study/word_study_screen.dart';
+import 'package:zaban/screens/subscription/super_subscription_screen.dart';
+import 'package:zaban/services/subscription_service.dart';
+import 'package:zaban/services/user_stats_service.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/shop_bottom_sheet.dart';
+import 'package:zaban/widgets/stats_header_bar.dart';
 
 class LearningPathScreen extends StatefulWidget {
   const LearningPathScreen({super.key});
@@ -17,6 +22,7 @@ class LearningPathScreen extends StatefulWidget {
 class _LearningPathScreenState extends State<LearningPathScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
+  final UserStatsService _statsService = userStatsService;
 
   @override
   void initState() {
@@ -25,6 +31,8 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
+    _statsService.fetchStats().catchError((_) {});
+    subscriptionService.fetchStatus().catchError((_) {});
   }
 
   @override
@@ -57,7 +65,10 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: AppColors.ink.withValues(alpha: 0.45),
-      builder: (context) => _UnitActionSheet(node: node),
+      builder: (context) => _UnitActionSheet(
+        node: node,
+        statsService: _statsService,
+      ),
     );
   }
 
@@ -87,14 +98,60 @@ class _LearningPathScreenState extends State<LearningPathScreen>
                 padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
                 child: Column(
                   children: [
-                    Text(
-                      'زبان',
-                      style: GoogleFonts.vazirmatn(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.ink,
-                        height: 1.1,
-                      ),
+                    Row(
+                      children: [
+                        const Spacer(),
+                        Text(
+                          'زبان',
+                          style: GoogleFonts.vazirmatn(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.ink,
+                            height: 1.1,
+                          ),
+                        ),
+                        const Spacer(),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      const SuperSubscriptionScreen(),
+                                ),
+                              ).then((_) {
+                                _statsService.fetchStats().catchError((_) {});
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF7C3AED),
+                                    Color(0xFFF59E0B),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Text(
+                                'SUPER',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -105,6 +162,8 @@ class _LearningPathScreenState extends State<LearningPathScreen>
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                    const SizedBox(height: 14),
+                    StatsHeaderBar(statsService: _statsService),
                   ],
                 ),
               ),
@@ -330,9 +389,36 @@ class _ZigzagPathPainter extends CustomPainter {
 }
 
 class _UnitActionSheet extends StatelessWidget {
-  const _UnitActionSheet({required this.node});
+  const _UnitActionSheet({
+    required this.node,
+    required this.statsService,
+  });
 
   final PathNodeModel node;
+  final UserStatsService statsService;
+
+  Future<void> _startQuiz(BuildContext context) async {
+    Navigator.pop(context);
+
+    if (!statsService.isSuper && statsService.hearts <= 0) {
+      await showShopBottomSheet(
+        context,
+        statsService: statsService,
+        message: 'برای شروع آزمون به قلب نیاز داری!',
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => QuizScreen(
+          unitTitle: node.title,
+          questions: SampleData.questions,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -414,17 +500,7 @@ class _UnitActionSheet extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => QuizScreen(
-                      unitTitle: node.title,
-                      questions: SampleData.questions,
-                    ),
-                  ),
-                );
-              },
+              onPressed: () => _startQuiz(context),
               icon: const Icon(Icons.quiz_rounded),
               label: const Text('شروع آزمون'),
             ),
