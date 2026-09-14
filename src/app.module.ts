@@ -25,12 +25,15 @@ import { ReengagementModule } from './reengagement/reengagement.module';
 import { AdminModule } from './admin/admin.module';
 import { AiModule } from './ai/ai.module';
 import { BillingModule } from './billing/billing.module';
+import { PlacementTestModule } from './placement-test/placement-test.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { Course } from './courses/entities/course.entity';
 import { Section } from './sections/entities/section.entity';
 import { Unit } from './units/entities/unit.entity';
 import { Word } from './words/entities/word.entity';
 import { Lesson } from './lessons/entities/lesson.entity';
 import { Exercise } from './exercises/entities/exercise.entity';
+import { Question } from './questions/entities/question.entity';
 import { User } from './users/entities/user.entity';
 
 @Module({
@@ -66,6 +69,7 @@ import { User } from './users/entities/user.entity';
       Word,
       Lesson,
       Exercise,
+      Question,
     ]),
     UsersModule,
     AuthModule,
@@ -87,6 +91,8 @@ import { User } from './users/entities/user.entity';
     AdminModule,
     AiModule,
     BillingModule,
+    PlacementTestModule,
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [

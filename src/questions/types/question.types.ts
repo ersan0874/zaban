@@ -14,6 +14,13 @@ export enum QuestionType {
   IMAGE_WORD = 'image_word',
 }
 
+/** Placement / adaptive difficulty bands */
+export enum QuestionDifficulty {
+  EASY = 'easy',
+  STANDARD = 'standard',
+  HARD = 'hard',
+}
+
 /** Multiple-choice */
 export interface MultipleChoiceContent {
   options: string[];

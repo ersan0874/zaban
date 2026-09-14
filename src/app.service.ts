@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './users/entities/user.entity';
 import { Course } from './courses/entities/course.entity';
@@ -9,7 +9,11 @@ import { Unit } from './units/entities/unit.entity';
 import { Word } from './words/entities/word.entity';
 import { Lesson, LessonKind } from './lessons/entities/lesson.entity';
 import { Exercise } from './exercises/entities/exercise.entity';
-import { QuestionType } from './questions/types/question.types';
+import { Question } from './questions/entities/question.entity';
+import {
+  QuestionDifficulty,
+  QuestionType,
+} from './questions/types/question.types';
 
 @Injectable()
 export class AppService implements OnModuleInit {
@@ -30,6 +34,8 @@ export class AppService implements OnModuleInit {
     private readonly lessonRepository: Repository<Lesson>,
     @InjectRepository(Exercise)
     private readonly exerciseRepository: Repository<Exercise>,
+    @InjectRepository(Question)
+    private readonly questionRepository: Repository<Question>,
   ) {}
 
   getHello(): string {
@@ -42,6 +48,7 @@ export class AppService implements OnModuleInit {
     await this.patchCheckpointLessonKind();
     await this.patchListeningAudioUrls();
     await this.ensureDiagnosticLesson();
+    await this.seedPlacementQuestionsIfNeeded();
   }
 
   /** Idempotent: ensure default admin account exists. */
@@ -380,7 +387,6 @@ export class AppService implements OnModuleInit {
       this.exerciseRepository.create({
         lessonId: quizLesson.id,
         type: QuestionType.MATCHING,
-        difficulty: QuestionDifficulty.EASY,
         prompt: 'هر واژه انگلیسی را به معنی فارسی درست وصل کنید.',
         order: 2,
         wordId: words[0].id,
@@ -405,7 +411,6 @@ export class AppService implements OnModuleInit {
       this.exerciseRepository.create({
         lessonId: quizLesson.id,
         type: QuestionType.CLOZE_TYPING,
-        difficulty: QuestionDifficulty.EASY,
         prompt: 'جای خالی را با واژه مناسب پر کنید.',
         order: 3,
         wordId: words[5].id,

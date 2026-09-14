@@ -98,4 +98,8 @@ export class UsersService {
     Object.assign(settings, data);
     return this.settingsRepository.save(settings);
   }
+
+  save(user: User): Promise<User> {
+    return this.usersRepository.save(user);
+  }
 }

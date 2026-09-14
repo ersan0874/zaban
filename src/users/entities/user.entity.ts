@@ -15,6 +15,12 @@ export enum UserRole {
   ADMIN = 'admin',
 }
 
+export enum UserLevel {
+  BEGINNER = 'beginner',
+  INTERMEDIATE = 'intermediate',
+  ADVANCED = 'advanced',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -36,6 +42,13 @@ export class User {
 
   @Column({ type: 'boolean', default: false })
   banned: boolean;
+
+  @Column({
+    type: 'varchar',
+    length: 32,
+    default: UserLevel.BEGINNER,
+  })
+  level: UserLevel;
 
   @CreateDateColumn()
   createdAt: Date;
