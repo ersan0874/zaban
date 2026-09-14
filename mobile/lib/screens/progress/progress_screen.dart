@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:zaban/repositories/curriculum_repository.dart';
+import 'package:zaban/repositories/mastery_repository.dart';
 import 'package:zaban/repositories/progress_repository.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
@@ -14,10 +16,13 @@ class ProgressScreen extends StatefulWidget {
 
 class _ProgressScreenState extends State<ProgressScreen> {
   final _repo = ProgressRepository();
+  final _curriculum = CurriculumRepository();
+  final _mastery = MasteryRepository();
   bool _loading = true;
   String? _error;
   ProgressSummary? _summary;
   ReviewsQueue? _reviews;
+  double? _masteryScore;
 
   @override
   void initState() {
@@ -33,10 +38,18 @@ class _ProgressScreenState extends State<ProgressScreen> {
     try {
       final summary = await _repo.getProgress();
       final reviews = await _repo.getReviews();
+      double? mastery;
+      try {
+        final courses = await _curriculum.listCourses();
+        if (courses.isNotEmpty) {
+          mastery = (await _mastery.getCourseMastery(courses.first.id)).score;
+        }
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _summary = summary;
         _reviews = reviews;
+        _masteryScore = mastery;
         _loading = false;
       });
     } on ApiException catch (e) {
@@ -103,10 +116,62 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                       children: [
+                        if (_masteryScore != null) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'تسلط دوره',
+                                  style: GoogleFonts.vazirmatn(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  '${_masteryScore!.round()}٪',
+                                  style: GoogleFonts.vazirmatn(
+                                    color: Colors.white,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: LinearProgressIndicator(
+                                    value: (_masteryScore! / 100).clamp(0, 1),
+                                    minHeight: 8,
+                                    backgroundColor:
+                                        Colors.white.withValues(alpha: 0.25),
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                         _StatRow(
                           tracked: _summary?.totalTracked ?? 0,
                           due: _summary?.dueCount ?? 0,
                           avg: _summary?.averageSkillScore ?? 0,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'آیتم‌های سررسید در درس بعدی به‌صورت مرور تزریق می‌شوند.',
+                          style: GoogleFonts.vazirmatn(
+                            color: AppColors.slate,
+                            fontSize: 13,
+                          ),
                         ),
                         const SizedBox(height: 20),
                         Text(
@@ -127,7 +192,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           )
                         else
                           ..._reviews!.items.map(
-                            (item) => _ProgressTile(item: item, highlight: true),
+                            (item) =>
+                                _ProgressTile(item: item, highlight: true),
                           ),
                         const SizedBox(height: 24),
                         Text(

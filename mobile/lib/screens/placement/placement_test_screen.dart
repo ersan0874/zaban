@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/models/question_model.dart';
-import 'package:zaban/screens/path/learning_path_screen.dart';
+import 'package:zaban/screens/home/home_shell.dart';
 import 'package:zaban/services/placement_test_service.dart';
 import 'package:zaban/theme/app_theme.dart';
 import 'package:zaban/widgets/placement_question_view.dart';
 
 class PlacementTestScreen extends StatefulWidget {
-  const PlacementTestScreen({super.key});
+  const PlacementTestScreen({super.key, this.onCompleted});
+
+  final VoidCallback? onCompleted;
 
   @override
   State<PlacementTestScreen> createState() => _PlacementTestScreenState();
@@ -117,9 +119,13 @@ class _PlacementTestScreenState extends State<PlacementTestScreen> {
       );
 
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LearningPathScreen()),
-      );
+      if (widget.onCompleted != null) {
+        widget.onCompleted!();
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeShell()),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {

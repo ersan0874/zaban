@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/models/path_node_model.dart';
 import 'package:zaban/repositories/curriculum_repository.dart';
+import 'package:zaban/repositories/economy_repository.dart';
 import 'package:zaban/repositories/energy_repository.dart';
 import 'package:zaban/repositories/gamification_repository.dart';
 import 'package:zaban/repositories/reengagement_repository.dart';
 import 'package:zaban/repositories/session_repository.dart';
 import 'package:zaban/screens/auth/auth_gate.dart';
 import 'package:zaban/screens/auth/profile_screen.dart';
-import 'package:zaban/screens/gamification/gamification_screen.dart';
 import 'package:zaban/screens/progress/progress_screen.dart';
 import 'package:zaban/screens/quiz/quiz_screen.dart';
 import 'package:zaban/screens/study/word_study_screen.dart';
@@ -17,7 +17,10 @@ import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
 
 class LearningPathScreen extends StatefulWidget {
-  const LearningPathScreen({super.key});
+  const LearningPathScreen({super.key, this.embedded = false});
+
+  /// When true, hides redundant nav icons (used inside HomeShell).
+  final bool embedded;
 
   @override
   State<LearningPathScreen> createState() => _LearningPathScreenState();
@@ -28,6 +31,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
   late final AnimationController _pulseController;
   final _curriculum = CurriculumRepository();
   final _energyRepo = EnergyRepository();
+  final _economyRepo = EconomyRepository();
   final _gamiRepo = GamificationRepository();
   final _reengagement = ReengagementRepository();
   final _sessions = SessionRepository();
@@ -39,6 +43,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
   List<PathNodeModel> _nodes = const [];
   EnergySnapshot? _energy;
   GamificationSnapshot? _gami;
+  int _gems = 0;
   ReengagementStatus? _reentry;
 
   @override
@@ -66,6 +71,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       final courses = await _curriculum.listCourses();
       EnergySnapshot? energy;
       GamificationSnapshot? gami;
+      var gems = 0;
       try {
         energy = await _energyRepo.getEnergy();
       } catch (_) {
@@ -75,6 +81,11 @@ class _LearningPathScreenState extends State<LearningPathScreen>
         gami = await _gamiRepo.getSnapshot();
       } catch (_) {
         gami = null;
+      }
+      try {
+        gems = (await _economyRepo.getWallet()).gems;
+      } catch (_) {
+        gems = 0;
       }
       ReengagementStatus? reentry;
       try {
@@ -89,6 +100,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
           _nodes = const [];
           _energy = energy;
           _gami = gami;
+          _gems = gems;
           _reentry = reentry;
         });
         return;
@@ -100,6 +112,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
         _nodes = path.nodes;
         _energy = energy;
         _gami = gami;
+        _gems = gems;
         _reentry = reentry;
         _loading = false;
       });
@@ -214,25 +227,11 @@ class _LearningPathScreenState extends State<LearningPathScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: Column(
                   children: [
                     Row(
                       children: [
-                        IconButton(
-                          tooltip: 'پیشرفت بازی',
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const GamificationScreen(),
-                              ),
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.emoji_events_rounded,
-                            color: AppColors.inkSoft,
-                          ),
-                        ),
                         IconButton(
                           tooltip: 'پیشرفت و مرور',
                           onPressed: () {
@@ -248,80 +247,69 @@ class _LearningPathScreenState extends State<LearningPathScreen>
                           ),
                         ),
                         Expanded(
-                          child: Text(
-                            'زبان',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.vazirmatn(
-                              fontSize: 36,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.ink,
-                              height: 1.1,
-                            ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'زبان',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.vazirmatn(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.ink,
+                                  height: 1.1,
+                                ),
+                              ),
+                              Text(
+                                _courseTitle ?? 'مسیر یادگیری',
+                                style: GoogleFonts.vazirmatn(
+                                  fontSize: 13,
+                                  color: AppColors.slate,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         IconButton(
-                          tooltip: 'پروفایل',
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => ProfileScreen(
-                                  onLoggedOut: () {
-                                    Navigator.of(context).pushAndRemoveUntil(
-                                      MaterialPageRoute<void>(
-                                        builder: (_) => const AuthGate(),
-                                      ),
-                                      (_) => false,
-                                    );
-                                  },
-                                ),
-                              ),
-                            );
-                          },
+                          tooltip: 'تازه‌سازی',
+                          onPressed: _loading ? null : _loadPath,
                           icon: const Icon(
-                            Icons.person_rounded,
+                            Icons.refresh_rounded,
                             color: AppColors.inkSoft,
                           ),
                         ),
+                        if (!widget.embedded)
+                          IconButton(
+                            tooltip: 'پروفایل',
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ProfileScreen(
+                                    onLoggedOut: () {
+                                      Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => const AuthGate(),
+                                        ),
+                                        (_) => false,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.person_rounded,
+                              color: AppColors.inkSoft,
+                            ),
+                          ),
                       ],
                     ),
-                    // refresh stays below title row
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: IconButton(
-                        tooltip: 'تلاش دوباره',
-                        onPressed: _loading ? null : _loadPath,
-                        icon: const Icon(
-                          Icons.refresh_rounded,
-                          color: AppColors.inkSoft,
-                        ),
-                      ),
+                    const SizedBox(height: 12),
+                    _StatsStrip(
+                      energy: _energy,
+                      gami: _gami,
+                      gems: _gems,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _courseTitle ?? 'مسیر یادگیری',
-                      style: GoogleFonts.vazirmatn(
-                        fontSize: 14,
-                        color: AppColors.slate,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    if (_energy != null) ...[
-                      const SizedBox(height: 10),
-                      _EnergyChip(energy: _energy!),
-                    ],
-                    if (_gami != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'استریک ${_gami!.streakCount}  ·  قلب ${_gami!.hearts}/${_gami!.heartsCap}  ·  XP ${_gami!.xp}'
-                        '${_gami!.unopenedLootCount > 0 ? '  ·  جعبه ${_gami!.unopenedLootCount}' : ''}',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.vazirmatn(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.inkSoft,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
                     if (_reentry?.requiresDiagnostic == true) ...[
                       const SizedBox(height: 12),
                       _DiagnosticBanner(
@@ -490,38 +478,108 @@ class _DiagnosticBanner extends StatelessWidget {
   }
 }
 
-class _EnergyChip extends StatelessWidget {
-  const _EnergyChip({required this.energy});
+class _StatsStrip extends StatelessWidget {
+  const _StatsStrip({
+    required this.energy,
+    required this.gami,
+    required this.gems,
+  });
 
-  final EnergySnapshot energy;
+  final EnergySnapshot? energy;
+  final GamificationSnapshot? gami;
+  final int gems;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _StatChip(
+            icon: Icons.bolt_rounded,
+            iconColor: AppColors.amber,
+            label: energy == null
+                ? '—'
+                : '${energy!.balance}/${energy!.cap}',
+          ),
+          const SizedBox(width: 8),
+          _StatChip(
+            icon: Icons.favorite_rounded,
+            iconColor: AppColors.danger,
+            label: gami == null
+                ? '—'
+                : '${gami!.hearts}/${gami!.heartsCap}',
+          ),
+          const SizedBox(width: 8),
+          _StatChip(
+            icon: Icons.local_fire_department_rounded,
+            iconColor: const Color(0xFFEA580C),
+            label: '${gami?.streakCount ?? 0}',
+          ),
+          const SizedBox(width: 8),
+          _StatChip(
+            icon: Icons.star_rounded,
+            iconColor: AppColors.tealDeep,
+            label: '${gami?.xp ?? 0}',
+          ),
+          const SizedBox(width: 8),
+          _StatChip(
+            icon: Icons.diamond_rounded,
+            iconColor: const Color(0xFF0284C7),
+            label: '$gems',
+          ),
+          if ((gami?.unopenedLootCount ?? 0) > 0) ...[
+            const SizedBox(width: 8),
+            _StatChip(
+              icon: Icons.card_giftcard_rounded,
+              iconColor: AppColors.amber,
+              label: '${gami!.unopenedLootCount}',
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.mistDeep),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.ink.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.bolt_rounded, color: AppColors.amber, size: 20),
+          Icon(icon, color: iconColor, size: 18),
           const SizedBox(width: 6),
           Text(
-            '${energy.balance} / ${energy.cap}',
+            label,
             style: GoogleFonts.vazirmatn(
               fontWeight: FontWeight.w800,
               color: AppColors.ink,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'هر ${energy.regenIntervalMinutes} دقیقه +۱',
-            style: GoogleFonts.vazirmatn(
-              fontSize: 11,
-              color: AppColors.slate,
+              fontSize: 13,
             ),
           ),
         ],

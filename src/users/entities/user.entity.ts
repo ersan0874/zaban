@@ -46,9 +46,10 @@ export class User {
   @Column({
     type: 'varchar',
     length: 32,
-    default: UserLevel.BEGINNER,
+    nullable: true,
+    default: null,
   })
-  level: UserLevel;
+  level: UserLevel | null;
 
   @CreateDateColumn()
   createdAt: Date;
