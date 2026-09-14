@@ -380,6 +380,7 @@ export class AppService implements OnModuleInit {
       this.exerciseRepository.create({
         lessonId: quizLesson.id,
         type: QuestionType.MATCHING,
+        difficulty: QuestionDifficulty.EASY,
         prompt: 'هر واژه انگلیسی را به معنی فارسی درست وصل کنید.',
         order: 2,
         wordId: words[0].id,
@@ -404,6 +405,7 @@ export class AppService implements OnModuleInit {
       this.exerciseRepository.create({
         lessonId: quizLesson.id,
         type: QuestionType.CLOZE_TYPING,
+        difficulty: QuestionDifficulty.EASY,
         prompt: 'جای خالی را با واژه مناسب پر کنید.',
         order: 3,
         wordId: words[5].id,
@@ -544,6 +546,160 @@ export class AppService implements OnModuleInit {
 
     this.logger.log(
       `Seed complete: course=${course.id}, unit=${unit.id}, diagnosticLesson=${diagnosticLesson.id}, studyLesson=${studyLesson.id}, quizLesson=${quizLesson.id}, reviewLesson=${reviewLesson.id}, words=${words.length}, exercises=15`,
+    );
+  }
+
+  private async seedPlacementQuestionsIfNeeded(): Promise<void> {
+    const placementCount = await this.questionRepository.count({
+      where: {
+        difficulty: In([
+          QuestionDifficulty.STANDARD,
+          QuestionDifficulty.HARD,
+        ]),
+        type: QuestionType.MULTIPLE_CHOICE,
+      },
+    });
+
+    if (placementCount >= 10) {
+      return;
+    }
+
+    this.logger.log('Seeding placement test questions...');
+
+    let section = await this.sectionRepository.findOne({
+      where: { order: 1 },
+    });
+
+    if (!section) {
+      section = await this.sectionRepository.save(
+        this.sectionRepository.create({
+          title: 'واژگان عمومی کنکور ارشد',
+          order: 1,
+        }),
+      );
+    }
+
+    const placementUnit = await this.unitRepository.save(
+      this.unitRepository.create({
+        title: 'آزمون تعیین سطح — واژگان کنکور',
+        order: 99,
+        sectionId: section.id,
+      }),
+    );
+
+    const placementQuestions: Array<{
+      prompt: string;
+      stem: string;
+      options: string[];
+      correct: string;
+      difficulty: QuestionDifficulty;
+    }> = [
+      {
+        prompt: 'معنی واژه «meticulous» کدام است؟',
+        stem: 'meticulous',
+        options: ['سست', 'دقیق و جزئی‌نگر', 'بی‌تفاوت', 'ناگهانی'],
+        correct: 'دقیق و جزئی‌نگر',
+        difficulty: QuestionDifficulty.STANDARD,
+      },
+      {
+        prompt: 'معنی واژه «ubiquitous» کدام است؟',
+        stem: 'ubiquitous',
+        options: ['کمیاب', 'همه‌جا حاضر', 'مبهم', 'موقت'],
+        correct: 'همه‌جا حاضر',
+        difficulty: QuestionDifficulty.HARD,
+      },
+      {
+        prompt: 'معنی واژه «alleviate» کدام است؟',
+        stem: 'alleviate',
+        options: ['تشدید کردن', 'تسکین دادن', 'نادیده گرفتن', 'تحمیل کردن'],
+        correct: 'تسکین دادن',
+        difficulty: QuestionDifficulty.STANDARD,
+      },
+      {
+        prompt: 'معنی واژه «pragmatic» کدام است؟',
+        stem: 'pragmatic',
+        options: ['آرمانی‌گرا', 'عمل‌گرا', 'بی‌هدف', 'احساسی'],
+        correct: 'عمل‌گرا',
+        difficulty: QuestionDifficulty.STANDARD,
+      },
+      {
+        prompt: 'معنی واژه «scrutinize» کدام است؟',
+        stem: 'scrutinize',
+        options: ['رد کردن', 'با دقت بررسی کردن', 'تأیید سریع', 'فراموش کردن'],
+        correct: 'با دقت بررسی کردن',
+        difficulty: QuestionDifficulty.HARD,
+      },
+      {
+        prompt: 'معنی واژه «coherent» کدام است؟',
+        stem: 'coherent',
+        options: ['مبهم', 'منسجم', 'پراکنده', 'بی‌ربط'],
+        correct: 'منسجم',
+        difficulty: QuestionDifficulty.STANDARD,
+      },
+      {
+        prompt: 'معنی واژه «detrimental» کدام است؟',
+        stem: 'detrimental',
+        options: ['مفید', 'مضر', 'خنثی', 'ضروری'],
+        correct: 'مضر',
+        difficulty: QuestionDifficulty.STANDARD,
+      },
+      {
+        prompt: 'معنی واژه «ephemeral» کدام است؟',
+        stem: 'ephemeral',
+        options: ['پایدار', 'زودگذر', 'ابدی', 'قدیمی'],
+        correct: 'زودگذر',
+        difficulty: QuestionDifficulty.HARD,
+      },
+      {
+        prompt: 'معنی واژه «indigenous» کدام است؟',
+        stem: 'indigenous',
+        options: ['وارداتی', 'بومی', 'خارجی', 'مصنوعی'],
+        correct: 'بومی',
+        difficulty: QuestionDifficulty.STANDARD,
+      },
+      {
+        prompt: 'معنی واژه «reluctant» کدام است؟',
+        stem: 'reluctant',
+        options: ['مشتاق', 'بی‌میل', 'مصمم', 'خوشحال'],
+        correct: 'بی‌میل',
+        difficulty: QuestionDifficulty.STANDARD,
+      },
+      {
+        prompt: 'معنی واژه «substantiate» کدام است؟',
+        stem: 'substantiate',
+        options: ['رد کردن', 'سندیت بخشیدن', 'نادیده گرفتن', 'تقلیل دادن'],
+        correct: 'سندیت بخشیدن',
+        difficulty: QuestionDifficulty.HARD,
+      },
+      {
+        prompt: 'معنی واژه «versatile» کدام است؟',
+        stem: 'versatile',
+        options: ['تک‌بعدی', 'چندکاره', 'ثابت', 'ضعیف'],
+        correct: 'چندکاره',
+        difficulty: QuestionDifficulty.STANDARD,
+      },
+    ];
+
+    await this.questionRepository.save(
+      placementQuestions.map((item) =>
+        this.questionRepository.create({
+          unitId: placementUnit.id,
+          type: QuestionType.MULTIPLE_CHOICE,
+          difficulty: item.difficulty,
+          prompt: item.prompt,
+          content: {
+            stem: item.stem,
+            options: item.options,
+          },
+          answer: {
+            correctOption: item.correct,
+          },
+        }),
+      ),
+    );
+
+    this.logger.log(
+      `Placement seed complete: ${placementQuestions.length} questions added.`,
     );
   }
 }

@@ -6,7 +6,10 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Unit } from '../../units/entities/unit.entity';
-import { QuestionType } from '../types/question.types';
+import {
+  QuestionDifficulty,
+  QuestionType,
+} from '../types/question.types';
 import type {
   QuestionAnswer,
   QuestionContent,
@@ -43,6 +46,14 @@ export class Question {
    */
   @Column({ type: 'jsonb' })
   answer: QuestionAnswer;
+
+  @Column({
+    type: 'enum',
+    enum: QuestionDifficulty,
+    nullable: true,
+    default: null,
+  })
+  difficulty: QuestionDifficulty | null;
 
   @ManyToOne(() => Unit, (unit) => unit.questions, {
     onDelete: 'CASCADE',
