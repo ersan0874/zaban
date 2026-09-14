@@ -7,6 +7,7 @@ class QuestionModel {
   final Map<String, dynamic> content;
   final dynamic answer;
   final String? unitId;
+  final bool isReview;
 
   const QuestionModel({
     required this.id,
@@ -15,6 +16,7 @@ class QuestionModel {
     required this.content,
     required this.answer,
     this.unitId,
+    this.isReview = false,
   });
 
   factory QuestionModel.fromJson(Map<String, dynamic> json) {
@@ -33,6 +35,7 @@ class QuestionModel {
       content: content,
       answer: json['answer'],
       unitId: json['unitId'] as String? ?? json['unit_id'] as String?,
+      isReview: json['isReview'] as bool? ?? false,
     );
   }
 
@@ -43,6 +46,7 @@ class QuestionModel {
         'content': content,
         'answer': answer,
         if (unitId != null) 'unitId': unitId,
+        'isReview': isReview,
       };
 
   bool get isMultipleChoice => type == 'multiple_choice';

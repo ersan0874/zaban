@@ -1,0 +1,29 @@
+{
+    "answers":  [
+                    {
+                        "exerciseId":  "945a7993-6443-4d4d-84db-66006e3c0d44",
+                        "response":  {
+                                         "correctOption":  "رها کردن"
+                                     }
+                    },
+                    {
+                        "exerciseId":  "585bdd8b-89ae-4a6a-80fd-3f85229edede",
+                        "response":  {
+                                         "pairs":  {
+                                                       "abandon":  "رها کردن",
+                                                       "ambiguous":  "مبهم",
+                                                       "accumulate":  "انباشتن",
+                                                       "benevolent":  "خیرخواه"
+                                                   }
+                                     }
+                    },
+                    {
+                        "exerciseId":  "de17cb9d-90f7-48a2-9adb-eb929850c1e3",
+                        "response":  {
+                                         "blanks":  {
+                                                        "blank_1":  "diminish"
+                                                    }
+                                     }
+                    }
+                ]
+}

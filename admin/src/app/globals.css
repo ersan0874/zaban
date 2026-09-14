@@ -1,0 +1,137 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: #f4f6f8;
+  color: #1a1a2e;
+}
+
+a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 1.5rem 1rem;
+}
+
+.sidebar h1 {
+  font-size: 1.1rem;
+  margin: 0 0 1.5rem;
+}
+
+.sidebar nav a {
+  display: block;
+  color: #cbd5e1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+}
+
+.sidebar nav a:hover {
+  background: #334155;
+  text-decoration: none;
+}
+
+.main {
+  flex: 1;
+  padding: 2rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+button,
+.btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+button.secondary {
+  background: #64748b;
+}
+
+button.danger {
+  background: #dc2626;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  color: #475569;
+}
+
+.login-page {
+  max-width: 360px;
+  margin: 4rem auto;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.stat {
+  background: #eff6ff;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.stat strong {
+  display: block;
+  font-size: 1.5rem;
+}
+
+.error {
+  color: #dc2626;
+  margin-bottom: 0.75rem;
+}

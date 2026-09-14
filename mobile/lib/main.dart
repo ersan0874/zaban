@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:zaban/screens/path/learning_path_screen.dart';
+import 'package:zaban/screens/auth/auth_gate.dart';
 import 'package:zaban/theme/app_theme.dart';
 
 void main() {
@@ -23,7 +23,7 @@ class ZabanApp extends StatelessWidget {
       title: 'زبان',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const LearningPathScreen(),
+      home: const AuthGate(),
     );
   }
 }

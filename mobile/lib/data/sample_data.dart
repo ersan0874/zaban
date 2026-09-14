@@ -2,7 +2,8 @@ import 'package:zaban/models/path_node_model.dart';
 import 'package:zaban/models/question_model.dart';
 import 'package:zaban/models/word_model.dart';
 
-/// Local sample data aligned with backend seed (phase 1).
+/// Legacy offline fixtures kept for reference / offline demos.
+/// Main app path (Phase 4+) loads from the NestJS API instead.
 class SampleData {
   static const unitTitle = 'یونیت ۱ — واژگان پرتکرار';
 

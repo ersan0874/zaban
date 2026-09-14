@@ -1,46 +1,100 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/models/question_model.dart';
+import 'package:zaban/repositories/session_repository.dart';
+import 'package:zaban/screens/quiz/modules/exercise_modules.dart';
+import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
 
+/// Quiz fed by a server lesson session; grading happens on submit.
 class QuizScreen extends StatefulWidget {
   const QuizScreen({
     super.key,
     required this.unitTitle,
+    required this.sessionId,
     required this.questions,
   });
 
   final String unitTitle;
+  final String sessionId;
   final List<QuestionModel> questions;
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _QuizScreenState extends State<QuizScreen> {
+class _QuizScreenState extends State<QuizScreen>
+    with SingleTickerProviderStateMixin {
+  final _sessions = SessionRepository();
   int _index = 0;
-  int _score = 0;
   bool _finished = false;
+  bool _submitting = false;
+  bool _showAnswerBurst = false;
+  String? _error;
+  SessionSubmitResult? _result;
+  final Map<String, dynamic> _responses = {};
+  late final AnimationController _burstController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+  );
 
   QuestionModel get _current => widget.questions[_index];
 
-  void _onAnswered(bool correct) {
-    if (correct) _score++;
-    Future<void>.delayed(const Duration(milliseconds: 450), () {
-      if (!mounted) return;
-      if (_index >= widget.questions.length - 1) {
-        setState(() => _finished = true);
-      } else {
-        setState(() => _index++);
-      }
+  @override
+  void dispose() {
+    _burstController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onModuleSubmit(Map<String, dynamic> response) async {
+    _responses[_current.id] = response;
+    if (_index >= widget.questions.length - 1) {
+      await _submitAll();
+      return;
+    }
+
+    setState(() => _showAnswerBurst = true);
+    _burstController.forward(from: 0);
+    await Future<void>.delayed(const Duration(milliseconds: 420));
+    if (!mounted) return;
+    setState(() {
+      _index++;
+      _showAnswerBurst = false;
     });
   }
 
-  void _skipUnsupported() {
-    if (_index >= widget.questions.length - 1) {
-      setState(() => _finished = true);
-    } else {
-      setState(() => _index++);
+  Future<void> _submitAll() async {
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      final answers = widget.questions.map((q) {
+        return {
+          'exerciseId': q.id,
+          'response': _responses[q.id] ?? <String, dynamic>{},
+        };
+      }).toList();
+      final result = await _sessions.submit(
+        sessionId: widget.sessionId,
+        answers: answers,
+      );
+      if (!mounted) return;
+      setState(() {
+        _result = result;
+        _finished = true;
+        _submitting = false;
+      });
+    } on ApiException catch (e) {
+      setState(() {
+        _error = e.message;
+        _submitting = false;
+      });
+    } catch (_) {
+      setState(() {
+        _error = 'ارسال پاسخ‌ها ناموفق بود';
+        _submitting = false;
+      });
     }
   }
 
@@ -56,7 +110,11 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
         ),
         child: SafeArea(
-          child: _finished ? _buildResult() : _buildQuiz(),
+          child: _submitting
+              ? const Center(child: CircularProgressIndicator())
+              : _finished
+                  ? _buildResult()
+                  : _buildQuiz(),
         ),
       ),
     );
@@ -64,6 +122,14 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Widget _buildQuiz() {
     final total = widget.questions.length;
+    if (total == 0) {
+      return Center(
+        child: Text(
+          'تمرینی در این نشست نیست',
+          style: GoogleFonts.vazirmatn(color: AppColors.slate),
+        ),
+      );
+    }
 
     return Column(
       children: [
@@ -108,18 +174,72 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
           ),
         ),
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
-            child: Padding(
-              key: ValueKey(_current.id),
-              padding: const EdgeInsets.all(24),
-              child: QuestionModuleView(
-                question: _current,
-                onAnswered: _onAnswered,
-                onSkip: _skipUnsupported,
+        if (_current.isReview)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'مرور هوشمند',
+              style: GoogleFonts.vazirmatn(
+                color: AppColors.amber,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
               ),
             ),
+          ),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              _error!,
+              style: GoogleFonts.vazirmatn(color: AppColors.danger),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        Expanded(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                child: Padding(
+                  key: ValueKey(_current.id),
+                  padding: const EdgeInsets.all(24),
+                  child: ExerciseModuleRouter(
+                    question: _current,
+                    onSubmitResponse: _onModuleSubmit,
+                  ),
+                ),
+              ),
+              if (_showAnswerBurst)
+                IgnorePointer(
+                  child: ScaleTransition(
+                    scale: CurvedAnimation(
+                      parent: _burstController,
+                      curve: Curves.elasticOut,
+                    ),
+                    child: Container(
+                      width: 92,
+                      height: 92,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.teal.withValues(alpha: 0.92),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.teal.withValues(alpha: 0.35),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ],
@@ -127,26 +247,41 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildResult() {
-    final total = widget.questions.length;
+    final correct = _result?.correctCount ?? 0;
+    final total = _result?.totalCount ?? widget.questions.length;
+    final percent = _result?.scorePercent ?? 0;
+
+    final passed = percent >= 70;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: _score == total
-                      ? const [AppColors.success, Color(0xFF047857)]
-                      : const [AppColors.teal, AppColors.tealDeep],
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.6, end: 1),
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.elasticOut,
+              builder: (context, scale, child) =>
+                  Transform.scale(scale: scale, child: child),
+              child: Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: passed
+                        ? const [AppColors.success, Color(0xFF047857)]
+                        : const [AppColors.amber, Color(0xFFB45309)],
+                  ),
+                ),
+                child: Icon(
+                  passed ? Icons.check_rounded : Icons.refresh_rounded,
+                  color: Colors.white,
+                  size: 44,
                 ),
               ),
-              child: const Icon(Icons.emoji_events_rounded,
-                  color: Colors.white, size: 44),
             ),
             const SizedBox(height: 24),
             Text(
@@ -158,12 +293,38 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              '$_score از $total پاسخ درست',
+              '$correct از $total پاسخ درست ($percent٪)',
               style: GoogleFonts.vazirmatn(
                 fontSize: 16,
                 color: AppColors.slate,
               ),
             ),
+            const SizedBox(height: 8),
+            Text(
+              'نمره توسط سرور محاسبه شد',
+              style: GoogleFonts.vazirmatn(
+                fontSize: 13,
+                color: AppColors.slate,
+              ),
+            ),
+            if ((_result?.comboRewards.isNotEmpty ?? false)) ...[
+              const SizedBox(height: 20),
+              _ComboBurst(
+                totalEnergy: _result!.comboRewards
+                    .fold<int>(0, (s, r) => s + r.energyAwarded),
+                count: _result!.comboRewards.length,
+              ),
+            ],
+            if (_result?.energyBalance != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'انرژی باقی‌مانده: ${_result!.energyBalance}',
+                style: GoogleFonts.vazirmatn(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.tealDeep,
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
@@ -182,220 +343,62 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 }
 
-/// Smart renderer that switches UI by question `type`.
-class QuestionModuleView extends StatelessWidget {
-  const QuestionModuleView({
-    super.key,
-    required this.question,
-    required this.onAnswered,
-    required this.onSkip,
-  });
+class _ComboBurst extends StatefulWidget {
+  const _ComboBurst({required this.totalEnergy, required this.count});
 
-  final QuestionModel question;
-  final ValueChanged<bool> onAnswered;
-  final VoidCallback onSkip;
+  final int totalEnergy;
+  final int count;
 
   @override
-  Widget build(BuildContext context) {
-    switch (question.type) {
-      case 'multiple_choice':
-        return _MultipleChoiceModule(
-          question: question,
-          onAnswered: onAnswered,
-        );
-      case 'matching':
-      case 'cloze_typing':
-        return _PlaceholderModule(
-          type: question.type,
-          prompt: question.prompt,
-          onSkip: onSkip,
-        );
-      default:
-        return _PlaceholderModule(
-          type: question.type,
-          prompt: question.prompt,
-          onSkip: onSkip,
-        );
-    }
+  State<_ComboBurst> createState() => _ComboBurstState();
+}
+
+class _ComboBurstState extends State<_ComboBurst>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..forward();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
-}
-
-class _MultipleChoiceModule extends StatefulWidget {
-  const _MultipleChoiceModule({
-    required this.question,
-    required this.onAnswered,
-  });
-
-  final QuestionModel question;
-  final ValueChanged<bool> onAnswered;
-
-  @override
-  State<_MultipleChoiceModule> createState() => _MultipleChoiceModuleState();
-}
-
-class _MultipleChoiceModuleState extends State<_MultipleChoiceModule> {
-  String? _selected;
-  bool _checked = false;
 
   @override
   Widget build(BuildContext context) {
-    final options = widget.question.options;
-    final correct = widget.question.correctOption;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          widget.question.prompt,
-          textAlign: TextAlign.right,
-          textDirection: TextDirection.rtl,
-          style: GoogleFonts.vazirmatn(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            height: 1.45,
-            color: AppColors.ink,
-          ),
+    return ScaleTransition(
+      scale: CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+        decoration: BoxDecoration(
+          color: AppColors.amberSoft,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.amber.withValues(alpha: 0.45)),
         ),
-        const SizedBox(height: 28),
-        ...options.map((option) {
-          final isSelected = _selected == option;
-          final isCorrectOption = option == correct;
-
-          Color bg = Colors.white.withValues(alpha: 0.85);
-          Color border = AppColors.mistDeep;
-          Color text = AppColors.ink;
-
-          if (_checked) {
-            if (isCorrectOption) {
-              bg = const Color(0xFFD1FAE5);
-              border = AppColors.success;
-              text = AppColors.success;
-            } else if (isSelected && !isCorrectOption) {
-              bg = const Color(0xFFFEE2E2);
-              border = AppColors.danger;
-              text = AppColors.danger;
-            }
-          } else if (isSelected) {
-            bg = AppColors.amberSoft;
-            border = AppColors.amber;
-          }
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: _checked
-                    ? null
-                    : () => setState(() => _selected = option),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: bg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: border, width: 1.8),
-                  ),
-                  child: Text(
-                    option,
-                    textAlign: TextAlign.right,
-                    textDirection: TextDirection.rtl,
-                    style: GoogleFonts.vazirmatn(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: text,
-                    ),
-                  ),
-                ),
+        child: Column(
+          children: [
+            Text(
+              'کومبو!',
+              style: GoogleFonts.vazirmatn(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: AppColors.ink,
               ),
             ),
-          );
-        }),
-        const Spacer(),
-        ElevatedButton(
-          onPressed: _selected == null || _checked
-              ? null
-              : () {
-                  setState(() => _checked = true);
-                  final ok = _selected == correct;
-                  widget.onAnswered(ok);
-                },
-          child: Text(
-            'بررسی',
-            style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PlaceholderModule extends StatelessWidget {
-  const _PlaceholderModule({
-    required this.type,
-    required this.prompt,
-    required this.onSkip,
-  });
-
-  final String type;
-  final String prompt;
-  final VoidCallback onSkip;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          prompt,
-          textAlign: TextAlign.right,
-          textDirection: TextDirection.rtl,
-          style: GoogleFonts.vazirmatn(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: AppColors.ink,
-          ),
-        ),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.mistDeep),
-          ),
-          child: Column(
-            children: [
-              Icon(Icons.construction_rounded,
-                  size: 40, color: AppColors.amber.withValues(alpha: 0.9)),
-              const SizedBox(height: 14),
-              Text(
-                'ماژول تعاملی [$type] در حال ساخت است',
-                textAlign: TextAlign.center,
-                textDirection: TextDirection.rtl,
-                style: GoogleFonts.vazirmatn(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.inkSoft,
-                ),
+            const SizedBox(height: 4),
+            Text(
+              '${widget.count} پاداش سرور · +${widget.totalEnergy} انرژی',
+              style: GoogleFonts.vazirmatn(
+                fontWeight: FontWeight.w700,
+                color: AppColors.amber,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        const Spacer(),
-        OutlinedButton(
-          onPressed: onSkip,
-          child: Text(
-            'رد شدن',
-            style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

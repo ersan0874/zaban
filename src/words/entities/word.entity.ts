@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Unit } from '../../units/entities/unit.entity';
+import { Course } from '../../courses/entities/course.entity';
 
 export interface WordExample {
   english: string;
@@ -29,12 +30,24 @@ export class Word {
   @Column({ type: 'jsonb', default: [] })
   examples: WordExample[];
 
-  @Column({ type: 'uuid' })
-  unitId: string;
+  /** Optional course-level lexicon link (domain-agnostic asset). */
+  @Column({ type: 'uuid', nullable: true })
+  courseId: string | null;
+
+  @ManyToOne(() => Course, (course) => course.words, {
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'courseId' })
+  course: Course | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  unitId: string | null;
 
   @ManyToOne(() => Unit, (unit) => unit.words, {
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
+    nullable: true,
   })
   @JoinColumn({ name: 'unitId' })
-  unit: Unit;
+  unit: Unit | null;
 }

@@ -35,6 +35,20 @@ class _WordStudyScreenState extends State<WordStudyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.words.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.unitTitle, style: GoogleFonts.vazirmatn()),
+        ),
+        body: Center(
+          child: Text(
+            'واژه‌ای برای این یونیت نیست',
+            style: GoogleFonts.vazirmatn(color: AppColors.slate),
+          ),
+        ),
+      );
+    }
+
     final total = widget.words.length;
 
     return Scaffold(
