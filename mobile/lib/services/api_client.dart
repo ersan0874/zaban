@@ -58,6 +58,8 @@ class ApiClient {
     );
   }
 
+  static final ApiClient instance = ApiClient();
+
   late final Dio _dio;
   final TokenStorage _tokens;
   bool _refreshing = false;

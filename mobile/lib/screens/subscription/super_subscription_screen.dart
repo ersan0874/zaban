@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/models/subscription_model.dart';
@@ -21,7 +23,7 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
   @override
   void initState() {
     super.initState();
-    _service.fetchStatus().catchError((_) {});
+    unawaited(_service.fetchStatus());
   }
 
   Future<void> _upgrade() async {

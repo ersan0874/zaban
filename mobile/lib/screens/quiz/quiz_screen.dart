@@ -5,8 +5,6 @@ import 'package:zaban/repositories/session_repository.dart';
 import 'package:zaban/screens/quiz/modules/exercise_modules.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
-import 'package:zaban/widgets/shop_bottom_sheet.dart';
-import 'package:zaban/widgets/stats_header_bar.dart';
 
 /// Quiz fed by a server lesson session; grading happens on submit.
 class QuizScreen extends StatefulWidget {
@@ -162,13 +160,6 @@ class _QuizScreenState extends State<QuizScreen>
                 ),
               ),
             ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: StatsHeaderBar(
-            statsService: _statsService,
-            shakeHearts: _shakeHearts,
           ),
         ),
         const SizedBox(height: 10),

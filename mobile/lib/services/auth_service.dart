@@ -39,12 +39,18 @@ class AuthService {
         },
       );
 
-      final token = response.data['access_token'] as String?;
-      if (token == null || token.isEmpty) {
+      final data = response.data as Map<String, dynamic>;
+      final access = (data['accessToken'] ?? data['access_token']) as String?;
+      final refresh =
+          (data['refreshToken'] ?? data['refresh_token'] ?? access) as String?;
+      if (access == null || access.isEmpty) {
         throw Exception('توکن دریافت نشد');
       }
 
-      await _api.saveToken(token);
+      await _api.tokens.saveTokens(
+        accessToken: access,
+        refreshToken: refresh ?? access,
+      );
       return getMe();
     } on DioException catch (e) {
       throw _mapError(e, 'کد وارد شده نامعتبر است');
@@ -57,15 +63,15 @@ class AuthService {
       return UserModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        await _api.clearToken();
+        await _api.tokens.clear();
       }
       throw _mapError(e, 'دریافت اطلاعات کاربر با خطا مواجه شد');
     }
   }
 
-  Future<void> logout() => _api.clearToken();
+  Future<void> logout() => _api.tokens.clear();
 
-  Future<bool> isLoggedIn() => _api.hasToken();
+  Future<bool> isLoggedIn() => _api.tokens.hasAccessToken();
 
   Exception _mapError(DioException error, String fallback) {
     final data = error.response?.data;

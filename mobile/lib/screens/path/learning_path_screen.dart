@@ -15,8 +15,6 @@ import 'package:zaban/screens/quiz/quiz_screen.dart';
 import 'package:zaban/screens/study/word_study_screen.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
-import 'package:zaban/widgets/shop_bottom_sheet.dart';
-import 'package:zaban/widgets/stats_header_bar.dart';
 
 class LearningPathScreen extends StatefulWidget {
   const LearningPathScreen({super.key});
@@ -189,7 +187,6 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       barrierColor: AppColors.ink.withValues(alpha: 0.45),
       builder: (context) => _UnitActionSheet(
         node: node,
-        statsService: _statsService,
       ),
     );
   }
@@ -703,30 +700,6 @@ class _UnitActionSheet extends StatefulWidget {
   const _UnitActionSheet({required this.node});
 
   final PathNodeModel node;
-  final UserStatsService statsService;
-
-  Future<void> _startQuiz(BuildContext context) async {
-    Navigator.pop(context);
-
-    if (!statsService.isSuper && statsService.hearts <= 0) {
-      await showShopBottomSheet(
-        context,
-        statsService: statsService,
-        message: 'برای شروع آزمون به قلب نیاز داری!',
-      );
-      return;
-    }
-
-    if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => QuizScreen(
-          unitTitle: node.title,
-          questions: SampleData.questions,
-        ),
-      ),
-    );
-  }
 
   @override
   State<_UnitActionSheet> createState() => _UnitActionSheetState();

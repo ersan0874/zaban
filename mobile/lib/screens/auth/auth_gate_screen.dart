@@ -27,7 +27,13 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
     try {
       final loggedIn = await _authService.isLoggedIn();
       if (!loggedIn) {
-        _go(const LoginScreen());
+        _go(
+          LoginScreen(
+            onLoggedIn: () {
+              _bootstrap();
+            },
+          ),
+        );
         return;
       }
 
@@ -35,7 +41,13 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
       _routeByUser(user);
     } catch (_) {
       await _authService.logout();
-      _go(const LoginScreen());
+      _go(
+        LoginScreen(
+          onLoggedIn: () {
+            _bootstrap();
+          },
+        ),
+      );
     }
   }
 
