@@ -15,6 +15,8 @@ import { SessionsService } from './sessions.service';
 import { LlmModule } from '../ai/llm/llm.module';
 import { PendingGradesService } from './pending-grades.service';
 import { SessionsController } from './sessions.controller';
+import { LateGradesService } from './late-grades.service';
+import { LateGradesController } from './late-grades.controller';
 
 @Module({
   imports: [
@@ -28,8 +30,8 @@ import { SessionsController } from './sessions.controller';
     ReengagementModule,
     LlmModule,
   ],
-  controllers: [SessionsController],
-  providers: [SessionsService, PendingGradesService],
+  controllers: [SessionsController, LateGradesController],
+  providers: [SessionsService, PendingGradesService, LateGradesService],
   exports: [SessionsService, TypeOrmModule],
 })
 export class SessionsModule {}

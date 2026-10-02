@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /** Energy per page + growing combo (ADR-016). */
-export class EnergyPerPage1790970000000 implements MigrationInterface {
-  name = 'EnergyPerPage1790970000000';
+export class EnergyPerPage1790970000001 implements MigrationInterface {
+  name = 'EnergyPerPage1790970000001';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:zaban/main.dart';
 import 'package:zaban/repositories/session_repository.dart';
 import 'package:zaban/screens/quiz/answer_feedback_bar.dart';
 import 'package:zaban/theme/app_theme.dart';
@@ -24,6 +26,16 @@ StepResult _step({required bool ok, String? solution}) => StepResult.fromJson({
 
 void main() {
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+
+  testWidgets('Zaban app smoke test shows brand', (WidgetTester tester) async {
+    // No saved token: the auth gate finishes loading and shows the brand.
+    FlutterSecureStorage.setMockInitialValues({});
+    await tester.pumpWidget(const ZabanApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('زبان'), findsWidgets);
+  });
 
   testWidgets('feedback bar praises a correct answer', (tester) async {
     var continued = false;

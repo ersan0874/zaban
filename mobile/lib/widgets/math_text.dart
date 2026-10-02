@@ -55,41 +55,19 @@ class MathText extends StatelessWidget {
       );
     }
 
+    final hasMath = _tokenPattern
+        .allMatches(text)
+        .any((m) => m.group(1) != null || m.group(2) != null);
+    if (hasMath) return _buildWithMath(base, direction, align);
+
+    // Only bold/code: plain rich text is enough.
     final spans = <InlineSpan>[];
     var last = 0;
     for (final match in _tokenPattern.allMatches(text)) {
       if (match.start > last) {
         spans.add(TextSpan(text: text.substring(last, match.start)));
       }
-      final display = match.group(1);
-      final inline = match.group(2);
-      final bold = match.group(3);
-      final code = match.group(4);
-      if (display != null) {
-        spans
-          ..add(const TextSpan(text: '\n'))
-          ..add(_mathSpan(display, base, display: true))
-          ..add(const TextSpan(text: '\n'));
-      } else if (inline != null) {
-        spans.add(_mathSpan(inline, base, display: false));
-      } else if (bold != null) {
-        spans.add(
-          TextSpan(
-            text: bold,
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-        );
-      } else if (code != null) {
-        spans.add(
-          TextSpan(
-            text: code,
-            style: AppTheme.latin(
-              fontSize: (base.fontSize ?? 16) * 0.95,
-              color: AppColors.grape,
-            ),
-          ),
-        );
-      }
+      spans.add(_styledSpan(match.group(3), match.group(4), base));
       last = match.end;
     }
     if (last < text.length) spans.add(TextSpan(text: text.substring(last)));
@@ -101,7 +79,98 @@ class MathText extends StatelessWidget {
     );
   }
 
-  InlineSpan _mathSpan(String tex, TextStyle base, {required bool display}) {
+  TextSpan _styledSpan(String? bold, String? code, TextStyle base) {
+    if (bold != null) {
+      return TextSpan(
+        text: bold,
+        style: const TextStyle(fontWeight: FontWeight.w900),
+      );
+    }
+    return TextSpan(
+      text: code,
+      style: AppTheme.latin(
+        fontSize: (base.fontSize ?? 16) * 0.95,
+        color: AppColors.grape,
+      ),
+    );
+  }
+
+  /// Formulas are laid out word by word in a [Wrap]: WidgetSpans inside
+  /// right-to-left paragraphs come out in the wrong order.
+  Widget _buildWithMath(
+    TextStyle base,
+    TextDirection direction,
+    TextAlign align,
+  ) {
+    final space = (base.fontSize ?? 16) * 0.28;
+    final items = <Widget>[];
+
+    void addWords(String chunk, {TextStyle? extra}) {
+      final parts = chunk.split(RegExp(r'(?<=\s)|(?=\s)'));
+      for (final part in parts) {
+        if (part.trim().isEmpty) {
+          if (part.contains('\n') && items.isNotEmpty) {
+            items.add(const SizedBox(width: double.infinity));
+          } else if (items.isNotEmpty) {
+            items.add(SizedBox(width: space));
+          }
+          continue;
+        }
+        items.add(
+          Text(
+            part,
+            style: extra == null ? base : base.merge(extra),
+            textDirection: detectTextDirection(part) == TextDirection.ltr &&
+                    direction == TextDirection.rtl
+                ? TextDirection.ltr
+                : direction,
+          ),
+        );
+      }
+    }
+
+    var last = 0;
+    for (final match in _tokenPattern.allMatches(text)) {
+      if (match.start > last) addWords(text.substring(last, match.start));
+      final display = match.group(1);
+      final inline = match.group(2);
+      if (display != null) {
+        items.add(_math(display, base, display: true));
+      } else if (inline != null) {
+        items.add(_math(inline, base, display: false));
+      } else {
+        final styled = _styledSpan(match.group(3), match.group(4), base);
+        addWords(styled.text ?? '', extra: styled.style);
+      }
+      last = match.end;
+    }
+    if (last < text.length) addWords(text.substring(last));
+
+    final WrapAlignment alignment;
+    switch (align) {
+      case TextAlign.center:
+        alignment = WrapAlignment.center;
+      case TextAlign.left:
+        alignment = direction == TextDirection.rtl
+            ? WrapAlignment.end
+            : WrapAlignment.start;
+      case TextAlign.right:
+        alignment = direction == TextDirection.rtl
+            ? WrapAlignment.start
+            : WrapAlignment.end;
+      default:
+        alignment = WrapAlignment.start;
+    }
+    return Wrap(
+      textDirection: direction,
+      alignment: alignment,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      runSpacing: 4,
+      children: items,
+    );
+  }
+
+  Widget _math(String tex, TextStyle base, {required bool display}) {
     final math = Math.tex(
       tex.trim(),
       mathStyle: display ? MathStyle.display : MathStyle.text,
@@ -112,19 +181,19 @@ class MathText extends StatelessWidget {
         textDirection: TextDirection.ltr,
       ),
     );
-    return WidgetSpan(
-      alignment: PlaceholderAlignment.middle,
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: display
-            ? SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: math,
-                ),
-              )
-            : math,
+    final ltr = Directionality(textDirection: TextDirection.ltr, child: math);
+    if (!display) return ltr;
+    // A display formula takes its own centered line.
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Center(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ltr,
+          ),
+        ),
       ),
     );
   }

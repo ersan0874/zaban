@@ -24,6 +24,22 @@
 
 ### Why
 درخواست کاربر: انرژی باید با هر صفحه کم شود و رشته‌ی بی‌اشتباه جایزه‌ی بزرگ‌تر بدهد؛ همراه با پیشنهادهای RTL، بازخورد فوری، جشن، صدا و حالت تاریک.
+## 2026-10-02 — فاز ۲۰: تکمیل محتوای AI (بدون تانل)
+
+### Added
+- فایل Word دارای معادله → LibreOffice → PDF → Gemini (LaTeX)؛ `CONTENT_SOFFICE_BIN`؛ LibreOffice در Docker image (`WITH_LIBREOFFICE`)
+- `GET /api/me/late-grades` و `POST /api/me/late-grades/seen`؛ ستون‌های `lateGradedAt`/`lateGradeUnseen` + migration `LateGrades`
+- اپ: برگه «نمره پاسخ‌های تشریحی‌ات رسید» هنگام باز شدن مسیر
+- اپ: `NoteContent` — جدول، تیتر، فهرست، تصویر و `[figure: ...]` در نکته‌ها
+- تست‌ها: `source-extractor.spec.ts`، `note_content_test.dart`، `rtl_math_order_test.dart`
+
+### Fixed
+- ترتیب فرمول‌ها در جمله‌های فارسی (BUG-005)
+- تست دود Flutter (BUG-004)
+- حذف معادله‌های Word (BUG-002)
+
+### Why
+کاربر خواست همه کارهای باقی‌مانده محتوای AI به‌جز تانل تمام شود.
 
 ## 2026-10-02 — فاز ۱۹: نمایش محتوای AI در اپ
 

@@ -70,6 +70,8 @@ export class PendingGradesService implements OnModuleInit, OnModuleDestroy {
       attempt.score = grade.score;
       attempt.feedback = grade.feedback ?? null;
       attempt.gradingStatus = 'graded';
+      attempt.lateGradedAt = new Date();
+      attempt.lateGradeUnseen = true;
       await this.attemptRepository.save(attempt);
       graded++;
     }

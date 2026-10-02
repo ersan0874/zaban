@@ -37,6 +37,13 @@ export class SessionAttempt {
   @Column({ type: 'varchar', length: 16, default: 'graded' })
   gradingStatus: 'graded' | 'pending' | 'ungraded';
 
+  /** Set when a pending answer was graded later; cleared once the learner sees it. */
+  @Column({ type: 'timestamptz', nullable: true })
+  lateGradedAt: Date | null;
+
+  @Column({ type: 'boolean', default: false })
+  lateGradeUnseen: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

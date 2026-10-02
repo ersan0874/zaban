@@ -32,6 +32,8 @@
 | GET | `/api/sessions/:sessionId` | Bearer | بازیابی نشست |
 | POST | `/api/sessions/:sessionId/steps` | Bearer | عبور از یک صفحه (سؤال یا نکته): نمره فوری، مصرف انرژی، کومبو |
 | POST | `/api/sessions/:sessionId/submit` | Bearer | جمع‌بندی درس (پاسخ‌ها قبلاً با `steps` نمره گرفته‌اند) |
+| GET | `/api/me/late-grades` | Bearer | پاسخ‌های تشریحی که بعد از پایان درس نمره گرفتند (حداکثر ۲۰): `{attemptId, exerciseId, lessonTitle, question, isCorrect, score, feedback, gradedAt}[]` |
+| POST | `/api/me/late-grades/seen` | Bearer | `{ attemptIds?: uuid[] }` (خالی = همه) → `{ marked }` |
 | GET | `/api/economy/wallet` | Bearer | موجودی جم |
 | GET | `/api/economy/shop` | Bearer | کاتالوگ فروشگاه |
 | POST | `/api/economy/shop/:itemKey/buy` | Bearer | خرید با جم |

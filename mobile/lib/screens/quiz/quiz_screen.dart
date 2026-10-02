@@ -13,6 +13,7 @@ import 'package:zaban/theme/app_theme.dart';
 import 'package:zaban/widgets/confetti.dart';
 import 'package:zaban/widgets/mascot.dart';
 import 'package:zaban/widgets/math_text.dart';
+import 'package:zaban/widgets/note_content.dart';
 
 /// Lesson player. Every page (the notes page and each question) is passed
 /// through the server, which grades it at once, burns one energy and
@@ -799,7 +800,7 @@ class _NotesList extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: MathText(
+              child: NoteContent(
                 notes[i],
                 style: GoogleFonts.vazirmatn(
                   fontSize: 15,
