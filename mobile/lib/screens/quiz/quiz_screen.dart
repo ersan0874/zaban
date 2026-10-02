@@ -5,6 +5,7 @@ import 'package:zaban/repositories/session_repository.dart';
 import 'package:zaban/screens/quiz/modules/exercise_modules.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/math_text.dart';
 
 /// Quiz fed by a server lesson session; grading happens on submit.
 class QuizScreen extends StatefulWidget {
@@ -13,11 +14,15 @@ class QuizScreen extends StatefulWidget {
     required this.unitTitle,
     required this.sessionId,
     required this.questions,
+    this.notes = const [],
   });
 
   final String unitTitle;
   final String sessionId;
   final List<QuestionModel> questions;
+
+  /// Lesson notes shown before the first exercise (empty = straight to quiz).
+  final List<String> notes;
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -30,6 +35,7 @@ class _QuizScreenState extends State<QuizScreen>
   bool _finished = false;
   bool _submitting = false;
   bool _showAnswerBurst = false;
+  late bool _showingNotes = widget.notes.isNotEmpty;
   String? _error;
   SessionSubmitResult? _result;
   final Map<String, dynamic> _responses = {};
@@ -107,7 +113,9 @@ class _QuizScreenState extends State<QuizScreen>
             ? const Center(child: CircularProgressIndicator())
             : _finished
                 ? _buildResult()
-                : _buildQuiz(),
+                : _showingNotes
+                    ? _buildNotes()
+                    : _buildQuiz(),
       ),
     );
   }
@@ -144,6 +152,13 @@ class _QuizScreenState extends State<QuizScreen>
                 '${_index + 1}/$total',
                 style: AppTheme.latin(fontSize: 15, color: AppColors.slate),
               ),
+              if (widget.notes.isNotEmpty)
+                IconButton(
+                  tooltip: 'نکته‌های درس',
+                  onPressed: _openNotesSheet,
+                  icon: const Icon(Icons.lightbulb_rounded),
+                  color: AppColors.sunDark,
+                ),
             ],
           ),
         ),
@@ -235,6 +250,140 @@ class _QuizScreenState extends State<QuizScreen>
         ),
       ],
     );
+  }
+
+  Widget _buildNotes() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'خروج',
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded, size: 28),
+                color: AppColors.locked,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  widget.unitTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.vazirmatn(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.slate,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.lightbulb_rounded,
+                color: AppColors.sun,
+                size: 30,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'نکته‌های این درس',
+                style: GoogleFonts.vazirmatn(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.ink,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'اول این نکته‌ها را بخوان، بعد تمرین کن.',
+            style: GoogleFonts.vazirmatn(fontSize: 13, color: AppColors.slate),
+          ),
+          const SizedBox(height: 16),
+          Expanded(child: _NotesList(notes: widget.notes)),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () => setState(() => _showingNotes = false),
+            child: const Text('شروع تمرین'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openNotesSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.snow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.8,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'نکته‌های این درس',
+                style: GoogleFonts.vazirmatn(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(child: _NotesList(notes: widget.notes)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Per-question explanations, essay scores and AI feedback.
+  List<Widget> _buildFeedback() {
+    final byId = {for (final q in widget.questions) q.id: q};
+    final items = (_result?.results ?? const <Map<String, dynamic>>[])
+        .where(
+          (r) =>
+              (r['feedback'] is String &&
+                  (r['feedback'] as String).trim().isNotEmpty) ||
+              (r['gradingStatus'] != null && r['gradingStatus'] != 'graded'),
+        )
+        .toList();
+    if (items.isEmpty) return const [];
+    return [
+      const SizedBox(height: 28),
+      Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Text(
+          'بازخورد پاسخ‌ها',
+          style: GoogleFonts.vazirmatn(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: AppColors.ink,
+          ),
+        ),
+      ),
+      const SizedBox(height: 12),
+      ...items.map(
+        (r) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _FeedbackCard(
+            result: r,
+            question: byId[r['exerciseId']],
+          ),
+        ),
+      ),
+    ];
   }
 
   Widget _buildResult() {
@@ -341,6 +490,7 @@ class _QuizScreenState extends State<QuizScreen>
                       count: _result!.comboRewards.length,
                     ),
                   ],
+                  ..._buildFeedback(),
                 ],
               ),
             ),
@@ -353,6 +503,165 @@ class _QuizScreenState extends State<QuizScreen>
               child: const Text('ادامه'),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NotesList extends StatelessWidget {
+  const _NotesList({required this.notes});
+  final List<String> notes;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      itemCount: notes.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, i) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.sunSoft,
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+          border: Border.all(color: AppColors.sun, width: 2),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: AppColors.sun,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '${i + 1}',
+                style: AppTheme.latin(fontSize: 14, color: Colors.white),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: MathText(
+                notes[i],
+                style: GoogleFonts.vazirmatn(
+                  fontSize: 15,
+                  height: 1.7,
+                  color: AppColors.ink,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeedbackCard extends StatelessWidget {
+  const _FeedbackCard({required this.result, required this.question});
+
+  final Map<String, dynamic> result;
+  final QuestionModel? question;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = result['gradingStatus']?.toString() ?? 'graded';
+    final correct = result['isCorrect'] == true;
+    final score = result['score'];
+    final feedback = result['feedback']?.toString().trim() ?? '';
+    final type = result['type']?.toString() ?? question?.type ?? '';
+
+    final (IconData icon, Color color, Color soft, String label) =
+        switch (status) {
+      'pending' => (
+          Icons.hourglass_top_rounded,
+          AppColors.sky,
+          AppColors.skySoft,
+          'در صف تصحیح هوش مصنوعی؛ بعداً نمره‌اش ثبت می‌شود',
+        ),
+      'ungraded' => (
+          Icons.menu_book_rounded,
+          AppColors.grape,
+          AppColors.mist,
+          'تصحیح خودکار امروز در دسترس نیست؛ پاسخ نمونه را ببین',
+        ),
+      _ => correct
+          ? (
+              Icons.check_circle_rounded,
+              AppColors.leaf,
+              AppColors.leafSoft,
+              'درست',
+            )
+          : (
+              Icons.cancel_rounded,
+              AppColors.coral,
+              AppColors.coralSoft,
+              'نادرست',
+            ),
+    };
+
+    final content = question?.content ?? const <String, dynamic>{};
+    final title = (content['question'] ?? content['statement'])?.toString() ??
+        question?.prompt ??
+        '';
+    final showScore = status == 'graded' && type == 'essay' && score is num;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: soft,
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: color, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.vazirmatn(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+              ),
+              if (showScore)
+                Text(
+                  '${(score * 100).round()}%',
+                  style: AppTheme.latin(fontSize: 18, color: color),
+                ),
+            ],
+          ),
+          if (title.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            MathText(
+              title,
+              style: GoogleFonts.vazirmatn(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+          ],
+          if (feedback.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            MathText(
+              feedback,
+              style: GoogleFonts.vazirmatn(
+                fontSize: 14,
+                height: 1.6,
+                color: AppColors.inkSoft,
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -8,6 +8,7 @@ class LessonSessionPayload {
     required this.expiresAt,
     required this.lessonTitle,
     required this.exercises,
+    this.notes = const [],
   });
 
   final String sessionId;
@@ -15,19 +16,24 @@ class LessonSessionPayload {
   final String lessonTitle;
   final List<QuestionModel> exercises;
 
+  /// Short teaching notes shown before practice (Markdown + LaTeX).
+  final List<String> notes;
+
   factory LessonSessionPayload.fromJson(Map<String, dynamic> json) {
     final lesson = Map<String, dynamic>.from(json['lesson'] as Map);
     return LessonSessionPayload(
       sessionId: json['sessionId'] as String,
       expiresAt: DateTime.parse(json['expiresAt'] as String),
       lessonTitle: lesson['title'] as String? ?? '',
-      exercises: (lesson['exercises'] as List? ?? [])
-          .map((e) {
-            final map = Map<String, dynamic>.from(e as Map);
-            // Session payload has no answer — keep compatible with QuestionModel.
-            map.putIfAbsent('answer', () => <String, dynamic>{});
-            return QuestionModel.fromJson(map);
-          })
+      exercises: (lesson['exercises'] as List? ?? []).map((e) {
+        final map = Map<String, dynamic>.from(e as Map);
+        // Session payload has no answer — keep compatible with QuestionModel.
+        map.putIfAbsent('answer', () => <String, dynamic>{});
+        return QuestionModel.fromJson(map);
+      }).toList(),
+      notes: (lesson['notes'] as List? ?? [])
+          .map((e) => e.toString())
+          .where((e) => e.trim().isNotEmpty)
           .toList(),
     );
   }

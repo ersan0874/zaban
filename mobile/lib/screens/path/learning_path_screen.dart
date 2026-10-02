@@ -731,6 +731,9 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
   bool _busy = false;
   String? _error;
 
+  /// Set when the unit has several lessons and the learner must pick one.
+  UnitDetail? _unit;
+
   Future<void> _startStudy() async {
     setState(() {
       _busy = true;
@@ -768,6 +771,13 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
     });
     try {
       final unit = await _curriculum.getUnit(widget.node.id);
+      if (unit.practiceLessons.length > 1) {
+        setState(() {
+          _busy = false;
+          _unit = unit;
+        });
+        return;
+      }
       final lesson = unit.quizLesson;
       if (lesson == null) {
         setState(() {
@@ -776,18 +786,7 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
         });
         return;
       }
-      final session = await _sessions.startLessonSession(lesson.id);
-      if (!mounted) return;
-      Navigator.pop(context);
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => QuizScreen(
-            unitTitle: unit.title,
-            sessionId: session.sessionId,
-            questions: session.exercises,
-          ),
-        ),
-      );
+      await _startLesson(unit, lesson);
     } on ApiException catch (e) {
       setState(() {
         _busy = false;
@@ -799,6 +798,43 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
         _error = 'شروع آزمون ناموفق بود';
       });
     }
+  }
+
+  Future<void> _pickLesson(UnitDetail unit, UnitLessonSummary lesson) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await _startLesson(unit, lesson);
+    } on ApiException catch (e) {
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    } catch (_) {
+      setState(() {
+        _busy = false;
+        _error = 'شروع آزمون ناموفق بود';
+      });
+    }
+  }
+
+  Future<void> _startLesson(UnitDetail unit, UnitLessonSummary lesson) async {
+    final session = await _sessions.startLessonSession(lesson.id);
+    if (!mounted) return;
+    Navigator.pop(context);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => QuizScreen(
+          unitTitle:
+              unit.practiceLessons.length > 1 ? lesson.title : unit.title,
+          sessionId: session.sessionId,
+          questions: session.exercises,
+          notes: session.notes,
+        ),
+      ),
+    );
   }
 
   @override
@@ -867,20 +903,56 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
                 ),
               ],
               const SizedBox(height: 20),
-              ElevatedButton(
-                style: onLeaf,
-                onPressed: _busy ? null : _startQuiz,
-                child: _busy
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: AppColors.leaf,
+              if (_unit != null) ...[
+                Text(
+                  'کدام درس را تمرین کنیم؟',
+                  style: GoogleFonts.vazirmatn(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.4,
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: _unit!.practiceLessons.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) {
+                      final lesson = _unit!.practiceLessons[i];
+                      return ElevatedButton(
+                        style: onLeaf,
+                        onPressed:
+                            _busy ? null : () => _pickLesson(_unit!, lesson),
+                        child: Text(
+                          '${i + 1}. ${lesson.title}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
-                      )
-                    : const Text('شروع آزمون'),
-              ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ] else
+                ElevatedButton(
+                  style: onLeaf,
+                  onPressed: _busy ? null : _startQuiz,
+                  child: _busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.leaf,
+                          ),
+                        )
+                      : const Text('شروع آزمون'),
+                ),
               const SizedBox(height: 12),
               OutlinedButton(
                 style: AppTheme.chunkyStyle(
