@@ -192,6 +192,7 @@ class AppTheme {
         unselectedLabelColor: AppColors.slate,
         indicatorColor: AppColors.sky,
         dividerColor: AppColors.line,
+        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
         labelStyle: GoogleFonts.vazirmatn(fontWeight: FontWeight.w800),
         unselectedLabelStyle:
             GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
@@ -208,6 +209,19 @@ class AppTheme {
           edge: AppColors.leafDark,
           foreground: Colors.white,
           textStyle: buttonText,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: chunkyStyle(
+          face: AppColors.leaf,
+          edge: AppColors.leafDark,
+          foreground: Colors.white,
+          textStyle: buttonText,
+        ).copyWith(
+          minimumSize: const WidgetStatePropertyAll(Size(64, 44)),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(

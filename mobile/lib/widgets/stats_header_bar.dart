@@ -50,9 +50,7 @@ class StatsHeaderBar extends StatelessWidget {
               duration: const Duration(milliseconds: 450),
               builder: (context, t, child) {
                 final dx = shakeHearts
-                    ? (t < 0.5
-                        ? (t * 4 - 1) * 6
-                        : ((1 - t) * 4 - 1) * 6)
+                    ? (t < 0.5 ? (t * 4 - 1) * 6 : ((1 - t) * 4 - 1) * 6)
                     : 0.0;
                 return Transform.translate(
                   offset: Offset(dx, 0),
@@ -120,7 +118,7 @@ class _SuperHeartBadge extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 '♾️',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.nunito(
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
                 ),
@@ -128,7 +126,7 @@ class _SuperHeartBadge extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 'SUPER',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.nunito(
                   fontWeight: FontWeight.w900,
                   fontSize: 10,
                   color: const Color(0xFF1A0B2E),
@@ -180,7 +178,7 @@ class _StatBadge extends StatelessWidget {
               const SizedBox(width: 5),
               Text(
                 value,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.nunito(
                   fontWeight: FontWeight.w800,
                   fontSize: 14,
                   color: highlight ? AppColors.danger : AppColors.ink,
