@@ -8,6 +8,7 @@ import {
 } from '../auth/decorators/current-user.decorator';
 import { SessionsService } from './sessions.service';
 import { SubmitSessionDto } from './dto/submit-session.dto';
+import { StepSessionDto } from './dto/step-session.dto';
 
 @ApiTags('sessions')
 @ApiBearerAuth()
@@ -36,6 +37,20 @@ export class SessionsController {
     @Param('sessionId') sessionId: string,
   ) {
     return this.sessionsService.getSession(user.id, sessionId);
+  }
+
+  @Post('sessions/:sessionId/steps')
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @ApiOperation({
+    summary:
+      'Pass one page (answer or lesson note): instant grade, energy burn, combo',
+  })
+  step(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('sessionId') sessionId: string,
+    @Body() dto: StepSessionDto,
+  ) {
+    return this.sessionsService.step(user.id, sessionId, dto);
   }
 
   @Post('sessions/:sessionId/submit')

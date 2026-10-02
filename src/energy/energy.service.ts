@@ -7,6 +7,7 @@ import {
   EnergyTxnReason,
 } from './entities/energy-transaction.entity';
 import { EnergyConfig } from './energy.config';
+import { ComboRules, comboTier, rollComboReward } from './combo';
 import { EnergySubscription } from '../billing/entities/energy-subscription.entity';
 
 export type EnergySnapshot = {
@@ -15,13 +16,26 @@ export type EnergySnapshot = {
   regenIntervalMinutes: number;
   nextRegenAt: string | null;
   millisUntilNextRegen: number | null;
+  /** Energy per page passed. `lessonCost` is kept as an alias for old clients. */
+  stepCost: number;
   lessonCost: number;
+  comboStreak: number;
 };
 
 export type ComboRewardEvent = {
-  atAnswerIndex: number;
+  /** Streak that triggered the combo (5, 10, 15, ...). */
   streak: number;
+  tier: number;
+  /** Energy actually added (after the cap). */
   energyAwarded: number;
+  rolled: number;
+};
+
+export type ComboState = {
+  streak: number;
+  /** Pages per combo tier (default 5). */
+  length: number;
+  reward: ComboRewardEvent | null;
 };
 
 @Injectable()
@@ -54,10 +68,7 @@ export class EnergyService {
       const wallet = await this.loadWalletForUpdate(manager, userId);
       this.applyRegenInMemory(wallet);
       const before = wallet.balance;
-      wallet.balance = Math.min(
-        this.energyConfig.cap,
-        wallet.balance + amount,
-      );
+      wallet.balance = Math.min(this.energyConfig.cap, wallet.balance + amount);
       const applied = wallet.balance - before;
       await manager.save(wallet);
       if (applied > 0) {
@@ -77,119 +88,121 @@ export class EnergyService {
   }
 
   /**
-   * Burn energy to start a lesson session. Throws if insufficient after regen.
+   * A lesson can start only if the first page is affordable. Nothing is
+   * burned here; every page passed burns energy through [applyStep].
    */
-  async burnForLessonStart(
+  async assertCanStart(userId: string): Promise<EnergySnapshot> {
+    const wallet = await this.applyRegen(userId);
+    if (
+      !(await this.hasUnlimited(userId)) &&
+      wallet.balance < this.energyConfig.stepCost
+    ) {
+      throw this.insufficient(wallet);
+    }
+    return this.toSnapshot(wallet);
+  }
+
+  /**
+   * One page passed (a graded question or a lesson-note page). Burns the
+   * step cost, then advances or resets the user's combo streak. Every
+   * `comboLength` passed pages in a row restore a server-rolled amount of
+   * energy that grows with each tier (see combo.ts).
+   */
+  async applyStep(
     userId: string,
     sessionId: string,
-  ): Promise<EnergySnapshot> {
-    const unlimited = await this.subscriptionRepository.findOne({
-      where: {
-        userId,
-        active: true,
-        expiresAt: MoreThan(new Date()),
-      },
-    });
-    if (unlimited) {
-      return this.getSnapshot(userId);
-    }
-
-    const cost = this.energyConfig.lessonCost;
+    passed: boolean,
+  ): Promise<{ energy: EnergySnapshot; combo: ComboState }> {
+    const unlimited = await this.hasUnlimited(userId);
+    const cost = this.energyConfig.stepCost;
     return this.dataSource.transaction(async (manager) => {
       const wallet = await this.loadWalletForUpdate(manager, userId);
       this.applyRegenInMemory(wallet);
 
-      if (wallet.balance < cost) {
-        throw new ForbiddenException({
-          code: 'INSUFFICIENT_ENERGY',
-          message: 'Not enough energy to start this lesson',
-          energy: this.toSnapshot(wallet),
-        });
-      }
-
-      wallet.balance -= cost;
-      await manager.save(wallet);
-      await manager.save(
-        manager.create(EnergyTransaction, {
-          userId,
-          delta: -cost,
-          balanceAfter: wallet.balance,
-          reason: EnergyTxnReason.LESSON_START,
-          referenceId: sessionId,
-          meta: { cost },
-        }),
-      );
-
-      return this.toSnapshot(wallet);
-    });
-  }
-
-  /**
-   * Scan graded results in order; every N correct streak → server roll 1–7.
-   */
-  async applyComboRewards(
-    userId: string,
-    sessionId: string,
-    results: Array<{ isCorrect: boolean }>,
-  ): Promise<{ energy: EnergySnapshot; comboRewards: ComboRewardEvent[] }> {
-    const comboLength = this.energyConfig.comboLength;
-    const rewards: ComboRewardEvent[] = [];
-    let streak = 0;
-
-    for (let i = 0; i < results.length; i++) {
-      if (results[i].isCorrect) {
-        streak += 1;
-        if (streak % comboLength === 0) {
-          rewards.push({
-            atAnswerIndex: i,
-            streak,
-            energyAwarded: this.rollComboReward(),
-          });
+      if (!unlimited) {
+        if (wallet.balance < cost) {
+          throw this.insufficient(wallet);
         }
-      } else {
-        streak = 0;
+        wallet.balance -= cost;
+        await manager.save(
+          manager.create(EnergyTransaction, {
+            userId,
+            delta: -cost,
+            balanceAfter: wallet.balance,
+            reason: EnergyTxnReason.STEP,
+            referenceId: sessionId,
+            meta: { cost, passed },
+          }),
+        );
       }
-    }
 
-    if (rewards.length === 0) {
-      return { energy: await this.getSnapshot(userId), comboRewards: [] };
-    }
+      wallet.comboStreak = passed ? wallet.comboStreak + 1 : 0;
+      const tier = comboTier(wallet.comboStreak, this.energyConfig.comboLength);
+      let reward: ComboRewardEvent | null = null;
 
-    const totalGain = rewards.reduce((s, r) => s + r.energyAwarded, 0);
+      if (tier > 0) {
+        const rolled = rollComboReward(tier, this.comboRules());
+        const before = wallet.balance;
+        wallet.balance = Math.min(
+          this.energyConfig.cap,
+          wallet.balance + rolled,
+        );
+        const applied = wallet.balance - before;
+        reward = {
+          streak: wallet.comboStreak,
+          tier,
+          energyAwarded: applied,
+          rolled,
+        };
+        if (applied > 0) {
+          await manager.save(
+            manager.create(EnergyTransaction, {
+              userId,
+              delta: applied,
+              balanceAfter: wallet.balance,
+              reason: EnergyTxnReason.COMBO_REWARD,
+              referenceId: sessionId,
+              meta: { ...reward },
+            }),
+          );
+        }
+      }
 
-    const energy = await this.dataSource.transaction(async (manager) => {
-      const wallet = await this.loadWalletForUpdate(manager, userId);
-      this.applyRegenInMemory(wallet);
-
-      const before = wallet.balance;
-      wallet.balance = Math.min(
-        this.energyConfig.cap,
-        wallet.balance + totalGain,
-      );
-      const applied = wallet.balance - before;
       await manager.save(wallet);
-
-      await manager.save(
-        manager.create(EnergyTransaction, {
-          userId,
-          delta: applied,
-          balanceAfter: wallet.balance,
-          reason: EnergyTxnReason.COMBO_REWARD,
-          referenceId: sessionId,
-          meta: { requested: totalGain, applied, rewards },
-        }),
-      );
-
-      return this.toSnapshot(wallet);
+      return {
+        energy: this.toSnapshot(wallet),
+        combo: {
+          streak: wallet.comboStreak,
+          length: this.energyConfig.comboLength,
+          reward,
+        },
+      };
     });
-
-    return { energy, comboRewards: rewards };
   }
 
-  private rollComboReward(): number {
-    const min = this.energyConfig.comboRewardMin;
-    const max = this.energyConfig.comboRewardMax;
-    return min + Math.floor(Math.random() * (max - min + 1));
+  private comboRules(): ComboRules {
+    return {
+      length: this.energyConfig.comboLength,
+      minBase: this.energyConfig.comboRewardMin,
+      maxBase: this.energyConfig.comboRewardMax,
+      minStep: this.energyConfig.comboRewardMinStep,
+      maxStep: this.energyConfig.comboRewardMaxStep,
+    };
+  }
+
+  private async hasUnlimited(userId: string): Promise<boolean> {
+    const sub = await this.subscriptionRepository.findOne({
+      where: { userId, active: true, expiresAt: MoreThan(new Date()) },
+    });
+    return !!sub;
+  }
+
+  private insufficient(wallet: UserEnergy): ForbiddenException {
+    return new ForbiddenException({
+      code: 'INSUFFICIENT_ENERGY',
+      message: 'Not enough energy',
+      energy: this.toSnapshot(wallet),
+    });
   }
 
   private async applyRegen(userId: string): Promise<UserEnergy> {
@@ -293,7 +306,9 @@ export class EnergyService {
         regenIntervalMinutes: intervalMinutes,
         nextRegenAt: null,
         millisUntilNextRegen: null,
-        lessonCost: this.energyConfig.lessonCost,
+        stepCost: this.energyConfig.stepCost,
+        lessonCost: this.energyConfig.stepCost,
+        comboStreak: wallet.comboStreak ?? 0,
       };
     }
 
@@ -304,7 +319,9 @@ export class EnergyService {
       regenIntervalMinutes: intervalMinutes,
       nextRegenAt: new Date(nextAt).toISOString(),
       millisUntilNextRegen: Math.max(0, nextAt - Date.now()),
-      lessonCost: this.energyConfig.lessonCost,
+      stepCost: this.energyConfig.stepCost,
+      lessonCost: this.energyConfig.stepCost,
+      comboStreak: wallet.comboStreak ?? 0,
     };
   }
 }

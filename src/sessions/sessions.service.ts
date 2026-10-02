@@ -20,14 +20,18 @@ import { LessonKind } from '../lessons/entities/lesson.entity';
 import {
   LessonSession,
   LessonSessionStatus,
+  SessionStepRecord,
 } from './entities/lesson-session.entity';
 import { SessionAttempt } from './entities/session-attempt.entity';
 import { SubmitSessionDto } from './dto/submit-session.dto';
+import { StepSessionDto } from './dto/step-session.dto';
 import { gradeExercise } from './validators/exercise-grader';
+import { describeSolution } from './validators/exercise-solution';
 import { OpenAnswerGraderService } from '../ai/llm/open-answer-grader.service';
 import { ConfigService } from '@nestjs/config';
 import { QuestionType } from '../questions/types/question.types';
 import { asRecord } from '../questions/registry/helpers';
+import { GradeResult } from '../questions/registry';
 
 const SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
@@ -63,6 +67,7 @@ export class SessionsService {
     }
 
     await this.reengagementService.assertCanStartLesson(userId, lesson);
+    const energy = await this.energyService.assertCanStart(userId);
 
     const lessonExercises = (lesson.exercises ?? [])
       .slice()
@@ -88,14 +93,6 @@ export class SessionsService {
         completedAt: null,
       }),
     );
-
-    let energy;
-    try {
-      energy = await this.energyService.burnForLessonStart(userId, session.id);
-    } catch (err) {
-      await this.sessionRepository.delete(session.id);
-      throw err;
-    }
 
     return {
       sessionId: session.id,
@@ -166,6 +163,135 @@ export class SessionsService {
     };
   }
 
+  /**
+   * One page passed: grade the question (or accept a lesson-note page),
+   * burn energy and advance the combo. Answering the same page twice
+   * returns the first result without burning or grading again.
+   */
+  async step(userId: string, sessionId: string, dto: StepSessionDto) {
+    const session = await this.requireOwnedSession(userId, sessionId);
+    await this.expireIfNeeded(session);
+    if (session.status !== LessonSessionStatus.ACTIVE) {
+      throw new BadRequestException('Session is not active');
+    }
+
+    let key: string;
+    let exercise: Exercise | null = null;
+    if (dto.exerciseId) {
+      exercise = await this.requireSessionExercise(session, dto.exerciseId);
+      if (dto.response === undefined || dto.response === null) {
+        throw new BadRequestException('response is required for a question');
+      }
+      key = exercise.id;
+    } else if (dto.page) {
+      const index = Number(dto.page.split(':')[1]);
+      const lesson = await this.lessonRepository.findOne({
+        where: { id: session.lessonId },
+      });
+      if (index >= (lesson?.notes ?? []).length) {
+        throw new BadRequestException('Unknown lesson page');
+      }
+      key = dto.page;
+    } else {
+      throw new BadRequestException('exerciseId or page is required');
+    }
+
+    const solution = exercise
+      ? describeSolution(exercise.type, exercise.answer)
+      : null;
+    const previous = session.steps?.[key];
+    if (previous) {
+      return {
+        key,
+        ...previous,
+        solution,
+        duplicate: true,
+        energy: await this.energyService.getSnapshot(userId),
+        combo: null,
+      };
+    }
+
+    let record: SessionStepRecord = {
+      isCorrect: true,
+      score: 1,
+      feedback: null,
+      gradingStatus: 'graded',
+    };
+    if (exercise) {
+      const grade = await this.grade(userId, exercise, dto.response);
+      record = {
+        isCorrect: grade.correct,
+        score: grade.score,
+        feedback: grade.feedback ?? null,
+        gradingStatus: grade.status,
+      };
+    }
+    // An answer the AI could not grade yet is not counted as a mistake.
+    const passed = record.isCorrect || record.gradingStatus !== 'graded';
+
+    // Claim the page atomically so parallel retries cannot burn twice.
+    const claimed = await this.sessionRepository
+      .createQueryBuilder()
+      .update(LessonSession)
+      .set({
+        steps: () => `steps || jsonb_build_object(:key::text, :record::jsonb)`,
+      })
+      .where('id = :id', { id: session.id })
+      .andWhere('NOT jsonb_exists(steps, :key)')
+      .setParameters({ key, record: JSON.stringify(record) })
+      .execute();
+    if (!claimed.affected) {
+      throw new ConflictException('Page already passed');
+    }
+
+    let outcome: Awaited<ReturnType<EnergyService['applyStep']>>;
+    try {
+      outcome = await this.energyService.applyStep(userId, session.id, passed);
+    } catch (err) {
+      await this.sessionRepository
+        .createQueryBuilder()
+        .update(LessonSession)
+        .set({ steps: () => `steps - :key::text` })
+        .where('id = :id', { id: session.id })
+        .setParameters({ key })
+        .execute();
+      throw err;
+    }
+
+    if (exercise) {
+      await this.attemptRepository.save(
+        this.attemptRepository.create({
+          sessionId: session.id,
+          exerciseId: exercise.id,
+          response: dto.response,
+          isCorrect: record.isCorrect,
+          score: record.score,
+          feedback: record.feedback,
+          gradingStatus: record.gradingStatus,
+        }),
+      );
+    }
+
+    if (outcome.combo.reward) {
+      await this.sessionRepository
+        .createQueryBuilder()
+        .update(LessonSession)
+        .set({ comboRewards: () => `"comboRewards" || :reward::jsonb` })
+        .where('id = :id', { id: session.id })
+        .setParameters({ reward: JSON.stringify([outcome.combo.reward]) })
+        .execute();
+    }
+
+    return {
+      key,
+      ...record,
+      solution,
+      duplicate: false,
+      energy: outcome.energy,
+      combo: outcome.combo,
+    };
+  }
+
   async submit(userId: string, sessionId: string, dto: SubmitSessionDto) {
     const session = await this.requireOwnedSession(userId, sessionId);
     await this.expireIfNeeded(session);
@@ -177,18 +303,15 @@ export class SessionsService {
       throw new ConflictException('Session already completed');
     }
 
-    const lessonExercises = await this.exerciseRepository.find({
-      where: { lessonId: session.lessonId },
+    const reviewSet = new Set(session.reviewExerciseIds ?? []);
+    // Answers were graded and paid for page by page via /steps; the
+    // attempts saved there (possibly regraded since) are the source of truth.
+    const attempts = await this.attemptRepository.find({
+      where: { sessionId: session.id },
+      relations: { exercise: true },
+      order: { createdAt: 'ASC' },
     });
-    const reviewIds = session.reviewExerciseIds ?? [];
-    const reviewExercises =
-      reviewIds.length === 0
-        ? []
-        : await this.exerciseRepository.find({ where: { id: In(reviewIds) } });
-
-    const byId = new Map(
-      [...lessonExercises, ...reviewExercises].map((ex) => [ex.id, ex]),
-    );
+    const byExercise = new Map(attempts.map((a) => [a.exerciseId, a]));
 
     const results: Array<{
       exerciseId: string;
@@ -199,63 +322,24 @@ export class SessionsService {
       feedback: string | null;
       gradingStatus: string;
     }> = [];
-    const aiGradingAllowed = await this.canUseAiGrading(userId);
-
-    const attempts: SessionAttempt[] = [];
-    const reviewSet = new Set(reviewIds);
 
     for (const item of dto.answers) {
-      const exercise = byId.get(item.exerciseId);
-      if (!exercise) {
+      const attempt = byExercise.get(item.exerciseId);
+      if (!attempt) {
         throw new BadRequestException(
-          `Exercise ${item.exerciseId} is not part of this session`,
+          `Exercise ${item.exerciseId} was not answered in this session`,
         );
       }
-
-      const grade = await gradeExercise(
-        exercise.type,
-        exercise.answer,
-        item.response,
-        {
-          prompt: exercise.prompt,
-          content: asRecord(exercise.content),
-          openAnswerGrader: aiGradingAllowed
-            ? this.openAnswerGrader
-            : undefined,
-        },
-      );
-      if (grade.status === 'pending' && !aiGradingAllowed) {
-        // Over the daily AI-grading cap: show the model answer instead.
-        grade.status = 'ungraded';
-        const reference = asRecord(exercise.answer).referenceAnswer;
-        grade.feedback = typeof reference === 'string' ? reference : null;
-      }
-      const isCorrect = grade.correct;
-
       results.push({
-        exerciseId: exercise.id,
-        type: exercise.type,
-        isCorrect,
-        isReview: reviewSet.has(exercise.id),
-        score: grade.score,
-        feedback: grade.feedback ?? null,
-        gradingStatus: grade.status,
+        exerciseId: attempt.exerciseId,
+        type: attempt.exercise.type,
+        isCorrect: attempt.isCorrect,
+        isReview: reviewSet.has(attempt.exerciseId),
+        score: attempt.score ?? (attempt.isCorrect ? 1 : 0),
+        feedback: attempt.feedback ?? null,
+        gradingStatus: attempt.gradingStatus,
       });
-
-      attempts.push(
-        this.attemptRepository.create({
-          sessionId: session.id,
-          exerciseId: exercise.id,
-          response: item.response,
-          isCorrect,
-          score: grade.score,
-          feedback: grade.feedback ?? null,
-          gradingStatus: grade.status,
-        }),
-      );
     }
-
-    await this.attemptRepository.save(attempts);
 
     await this.progressService.recordSessionResults(
       userId,
@@ -266,11 +350,8 @@ export class SessionsService {
       })),
     );
 
-    const { energy, comboRewards } = await this.energyService.applyComboRewards(
-      userId,
-      session.id,
-      results,
-    );
+    const energy = await this.energyService.getSnapshot(userId);
+    const comboRewards = session.comboRewards ?? [];
 
     const correctCount = results.filter((r) => r.isCorrect).length;
 
@@ -357,6 +438,53 @@ export class SessionsService {
       .andWhere('attempt.createdAt >= :since', { since })
       .getCount();
     return used < limit;
+  }
+
+  /** The single place answers are graded (each answer once, at its step). */
+  private async grade(
+    userId: string,
+    exercise: Exercise,
+    response: unknown,
+  ): Promise<GradeResult> {
+    const aiGradingAllowed =
+      exercise.type !== (QuestionType.ESSAY as string) ||
+      (await this.canUseAiGrading(userId));
+    const grade = await gradeExercise(
+      exercise.type,
+      exercise.answer,
+      response,
+      {
+        prompt: exercise.prompt,
+        content: asRecord(exercise.content),
+        openAnswerGrader: aiGradingAllowed ? this.openAnswerGrader : undefined,
+      },
+    );
+    if (grade.status === 'pending' && !aiGradingAllowed) {
+      // Over the daily AI-grading cap: show the model answer instead.
+      grade.status = 'ungraded';
+      const reference = asRecord(exercise.answer).referenceAnswer;
+      grade.feedback = typeof reference === 'string' ? reference : null;
+    }
+    return grade;
+  }
+
+  private async requireSessionExercise(
+    session: LessonSession,
+    exerciseId: string,
+  ): Promise<Exercise> {
+    const exercise = await this.exerciseRepository.findOne({
+      where: { id: exerciseId },
+    });
+    const inSession =
+      !!exercise &&
+      (exercise.lessonId === session.lessonId ||
+        (session.reviewExerciseIds ?? []).includes(exercise.id));
+    if (!exercise || !inSession) {
+      throw new BadRequestException(
+        `Exercise ${exerciseId} is not part of this session`,
+      );
+    }
+    return exercise;
   }
 
   private toClientExercise(ex: Exercise, isReview = false) {
