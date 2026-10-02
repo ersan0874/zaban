@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -59,6 +60,9 @@ import { User } from './users/entities/user.entity';
         database: configService.get<string>('DB_DATABASE', 'zaban'),
         autoLoadEntities: true,
         synchronize: configService.get<string>('DB_SYNC', 'true') === 'true',
+        // With DB_SYNC=false (production) the schema comes from migrations.
+        migrations: [join(__dirname, 'database/migrations/*{.ts,.js}')],
+        migrationsRun: configService.get<string>('DB_SYNC', 'true') !== 'true',
       }),
     }),
     TypeOrmModule.forFeature([
