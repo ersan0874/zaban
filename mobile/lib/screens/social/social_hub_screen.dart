@@ -151,7 +151,7 @@ class _SocialHubScreenState extends State<SocialHubScreen>
           actions: [
             IconButton(
               onPressed: _loading ? null : _load,
-              icon: const Icon(Icons.refresh_rounded, color: AppColors.locked),
+              icon: Icon(Icons.refresh_rounded, color: AppColors.locked),
             ),
           ],
         ),
@@ -206,7 +206,7 @@ class _SocialHubScreenState extends State<SocialHubScreen>
           ),
           const ZSectionTitle('فعالیت‌ها'),
           if (_feed.isEmpty)
-            const ZMessage(
+            ZMessage(
               icon: Icons.forum_rounded,
               color: AppColors.skyBorder,
               text: 'هنوز فعالیتی نیست. یک درس تمام کن یا پست بگذار.',
@@ -295,7 +295,7 @@ class _SocialHubScreenState extends State<SocialHubScreen>
               child: Column(
                 children: [
                   for (final (i, f) in _friends.indexed) ...[
-                    if (i > 0) const Divider(height: 2, color: AppColors.line),
+                    if (i > 0) Divider(height: 2, color: AppColors.line),
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,

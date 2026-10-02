@@ -189,7 +189,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
                         children: [
                           for (final (i, q) in (g?.quests ?? []).indexed) ...[
                             if (i > 0)
-                              const Divider(height: 2, color: AppColors.line),
+                              Divider(height: 2, color: AppColors.line),
                             Padding(
                               padding: const EdgeInsets.all(14),
                               child: Row(
@@ -263,7 +263,7 @@ class _GamificationScreenState extends State<GamificationScreen> {
                       ZCard(
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.card_giftcard_rounded,
                               color: AppColors.locked,
                               size: 32,

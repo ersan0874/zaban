@@ -42,7 +42,7 @@ class _HomeShellState extends State<HomeShell> {
           children: pages,
         ),
         bottomNavigationBar: DecoratedBox(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(top: BorderSide(color: AppColors.line, width: 2)),
           ),
           child: NavigationBar(
@@ -50,30 +50,32 @@ class _HomeShellState extends State<HomeShell> {
             onDestinationSelected: (i) => setState(() => _index = i),
             height: 68,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: const [
+            destinations: [
               NavigationDestination(
                 icon: Icon(Icons.home_outlined, color: AppColors.locked),
-                selectedIcon: Icon(Icons.home_rounded, color: AppColors.flame),
+                selectedIcon:
+                    const Icon(Icons.home_rounded, color: AppColors.flame),
                 label: 'مسیر',
               ),
               NavigationDestination(
                 icon:
                     Icon(Icons.emoji_events_outlined, color: AppColors.locked),
-                selectedIcon:
-                    Icon(Icons.emoji_events_rounded, color: AppColors.amber),
+                selectedIcon: const Icon(Icons.emoji_events_rounded,
+                    color: AppColors.amber),
                 label: 'باشگاه',
               ),
               NavigationDestination(
                 icon:
                     Icon(Icons.people_outline_rounded, color: AppColors.locked),
-                selectedIcon: Icon(Icons.people_rounded, color: AppColors.sky),
+                selectedIcon:
+                    const Icon(Icons.people_rounded, color: AppColors.sky),
                 label: 'دوستان',
               ),
               NavigationDestination(
                 icon:
                     Icon(Icons.person_outline_rounded, color: AppColors.locked),
                 selectedIcon:
-                    Icon(Icons.person_rounded, color: AppColors.grape),
+                    const Icon(Icons.person_rounded, color: AppColors.grape),
                 label: 'من',
               ),
             ],

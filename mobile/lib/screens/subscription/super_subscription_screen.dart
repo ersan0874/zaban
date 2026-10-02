@@ -263,7 +263,7 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
                             foreground: AppColors.ink,
                           ),
                           child: _loading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 22,
                                   height: 22,
                                   child: CircularProgressIndicator(

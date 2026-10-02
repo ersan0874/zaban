@@ -108,6 +108,9 @@ class ApiClient {
       if (code == 'DIAGNOSTIC_REQUIRED') {
         return 'اول آزمون بازگشت را انجام بده، بعد درس جدید شروع کن.';
       }
+      if (code == 'INSUFFICIENT_ENERGY') {
+        return 'انرژی کافی نیست. کمی صبر کن تا شارژ شود.';
+      }
       if (msg is String) return msg;
       if (msg is Map) {
         final code = msg['code']?.toString();

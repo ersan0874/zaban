@@ -159,6 +159,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
             unitTitle: _reentry?.diagnosticLessonTitle ?? 'آزمون بازگشت',
             sessionId: session.sessionId,
             questions: session.exercises,
+            energy: session.energy,
           ),
         ),
       );
@@ -216,7 +217,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
           children: [
             Container(
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(color: AppColors.line, width: 2),
                 ),
@@ -247,7 +248,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
                   IconButton(
                     tooltip: 'تازه‌سازی',
                     onPressed: _loading ? null : _loadPath,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.refresh_rounded,
                       color: AppColors.locked,
                     ),
@@ -316,7 +317,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.cloud_off_rounded,
                 size: 56,
                 color: AppColors.locked,
@@ -832,6 +833,7 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
           sessionId: session.sessionId,
           questions: session.exercises,
           notes: session.notes,
+          energy: session.energy,
         ),
       ),
     );
@@ -841,8 +843,8 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
   Widget build(BuildContext context) {
     final node = widget.node;
     final onLeaf = AppTheme.chunkyStyle(
-      face: AppColors.snow,
-      edge: const Color(0xFFD6EFC6),
+      face: Colors.white,
+      edge: AppColors.isDark ? AppColors.leafDark : const Color(0xFFD6EFC6),
       foreground: AppColors.leafDark,
       textStyle: GoogleFonts.vazirmatn(
         fontSize: 16,

@@ -10,16 +10,16 @@ class ZCard extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16),
-    this.color = AppColors.snow,
-    this.borderColor = AppColors.line,
+    this.color,
+    this.borderColor,
     this.onTap,
     this.margin,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
-  final Color color;
-  final Color borderColor;
+  final Color? color;
+  final Color? borderColor;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry? margin;
 
@@ -29,9 +29,9 @@ class ZCard extends StatelessWidget {
     return Container(
       margin: margin,
       decoration: BoxDecoration(
-        color: color,
+        color: color ?? AppColors.snow,
         borderRadius: r,
-        border: Border.all(color: borderColor, width: 2),
+        border: Border.all(color: borderColor ?? AppColors.line, width: 2),
       ),
       child: Material(
         color: Colors.transparent,
@@ -285,14 +285,14 @@ class ZMessage extends StatelessWidget {
     super.key,
     required this.icon,
     required this.text,
-    this.color = AppColors.locked,
+    this.color,
     this.actionLabel,
     this.onAction,
   });
 
   final IconData icon;
   final String text;
-  final Color color;
+  final Color? color;
   final String? actionLabel;
   final VoidCallback? onAction;
 
@@ -304,7 +304,7 @@ class ZMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 64, color: color),
+            Icon(icon, size: 64, color: color ?? AppColors.locked),
             const SizedBox(height: 14),
             Text(
               text,

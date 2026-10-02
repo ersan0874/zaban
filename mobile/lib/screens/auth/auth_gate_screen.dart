@@ -70,7 +70,7 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.snow,
         ),
         child: Center(

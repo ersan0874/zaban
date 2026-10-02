@@ -1,51 +1,128 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Neutral and tint colors that change between light and dark mode.
+class Palette {
+  const Palette({
+    required this.snow,
+    required this.mist,
+    required this.line,
+    required this.lineDark,
+    required this.ink,
+    required this.inkSoft,
+    required this.slate,
+    required this.locked,
+    required this.leafSoft,
+    required this.skySoft,
+    required this.skyBorder,
+    required this.sunSoft,
+    required this.coralSoft,
+    required this.flameSoft,
+  });
+
+  final Color snow;
+  final Color mist;
+  final Color line;
+  final Color lineDark;
+  final Color ink;
+  final Color inkSoft;
+  final Color slate;
+  final Color locked;
+  final Color leafSoft;
+  final Color skySoft;
+  final Color skyBorder;
+  final Color sunSoft;
+  final Color coralSoft;
+  final Color flameSoft;
+}
+
 /// Playful learning palette (Duolingo-inspired): white ground, bright
 /// semantic colors, each with a darker "edge" used for 3D buttons.
 ///
 /// Meaning is fixed: leaf = progress/correct, sky = selection, sun = reward/XP,
 /// flame = streak, coral = hearts/wrong, grape = gems/Super.
+///
+/// Brand colors are constant; neutrals and soft tints follow [current],
+/// which the app switches for dark mode (see `main.dart`).
 class AppColors {
+  static const Palette lightPalette = Palette(
+    snow: Color(0xFFFFFFFF),
+    mist: Color(0xFFF6F8F9),
+    line: Color(0xFFE3E8EC),
+    lineDark: Color(0xFFC9D1D7),
+    ink: Color(0xFF2B3A45),
+    inkSoft: Color(0xFF4B5C68),
+    slate: Color(0xFF6E7F8B),
+    locked: Color(0xFFAEB8C0),
+    leafSoft: Color(0xFFE6F8D9),
+    skySoft: Color(0xFFDDF2FD),
+    skyBorder: Color(0xFF9AD7FA),
+    sunSoft: Color(0xFFFFF6D6),
+    coralSoft: Color(0xFFFFE3E3),
+    flameSoft: Color(0xFFFFEBD3),
+  );
+
+  static const Palette darkPalette = Palette(
+    snow: Color(0xFF131F24),
+    mist: Color(0xFF1B2A31),
+    line: Color(0xFF37464F),
+    lineDark: Color(0xFF2A373E),
+    ink: Color(0xFFF1F7FB),
+    inkSoft: Color(0xFFC9D6DD),
+    slate: Color(0xFF93A6B0),
+    locked: Color(0xFF56676F),
+    leafSoft: Color(0xFF1E3818),
+    skySoft: Color(0xFF12324A),
+    skyBorder: Color(0xFF1F6493),
+    sunSoft: Color(0xFF3A3013),
+    coralSoft: Color(0xFF3E1D20),
+    flameSoft: Color(0xFF3D2810),
+  );
+
+  static Palette current = lightPalette;
+  static bool get isDark => identical(current, darkPalette);
+
   // Core semantic colors
   static const Color leaf = Color(0xFF58C322);
   static const Color leafDark = Color(0xFF46A012);
-  static const Color leafSoft = Color(0xFFE6F8D9);
+  static Color get leafSoft => current.leafSoft;
   static const Color sky = Color(0xFF2BA8F0);
   static const Color skyDark = Color(0xFF1A8BD0);
-  static const Color skySoft = Color(0xFFDDF2FD);
-  static const Color skyBorder = Color(0xFF9AD7FA);
+  static Color get skySoft => current.skySoft;
+  static Color get skyBorder => current.skyBorder;
   static const Color sun = Color(0xFFFFC930);
   static const Color sunDark = Color(0xFFE0A800);
-  static const Color sunSoft = Color(0xFFFFF6D6);
+  static Color get sunSoft => current.sunSoft;
   static const Color flame = Color(0xFFFF9A1F);
+  static const Color flameDark = Color(0xFFE07F00);
+  static Color get flameSoft => current.flameSoft;
   static const Color coral = Color(0xFFFF5A5F);
   static const Color coralDark = Color(0xFFE0383E);
-  static const Color coralSoft = Color(0xFFFFE3E3);
+  static Color get coralSoft => current.coralSoft;
   static const Color grape = Color(0xFFA570FF);
   static const Color grapeDark = Color(0xFF8A4FE8);
 
   // Neutrals
-  static const Color snow = Color(0xFFFFFFFF);
-  static const Color line = Color(0xFFE3E8EC);
-  static const Color lineDark = Color(0xFFC9D1D7);
+  static Color get snow => current.snow;
+  static Color get line => current.line;
+  static Color get lineDark => current.lineDark;
 
   // Legacy names kept so every screen picks up the new palette.
-  static const Color ink = Color(0xFF2B3A45);
-  static const Color inkSoft = Color(0xFF4B5C68);
+  static Color get ink => current.ink;
+  static Color get inkSoft => current.inkSoft;
   static const Color teal = leaf;
   static const Color tealDeep = leafDark;
-  static const Color tealSoft = leafSoft;
+  static Color get tealSoft => leafSoft;
   static const Color amber = Color(0xFFF5A400);
-  static const Color amberSoft = sunSoft;
-  static const Color mist = Color(0xFFF6F8F9);
-  static const Color mistDeep = line;
-  static const Color cloud = snow;
-  static const Color slate = Color(0xFF6E7F8B);
-  static const Color locked = Color(0xFFAEB8C0);
+  static Color get amberSoft => sunSoft;
+  static Color get mist => current.mist;
+  static Color get mistDeep => line;
+  static Color get cloud => snow;
+  static Color get slate => current.slate;
+  static Color get locked => current.locked;
   static const Color success = leaf;
   static const Color danger = Color(0xFFEA3A40);
-  static const Color pathLine = line;
+  static Color get pathLine => line;
 }
 
 class AppTheme {
@@ -63,20 +140,25 @@ class AppTheme {
         color: color,
       );
 
-  static ThemeData get light {
+  static ThemeData get light =>
+      _build(AppColors.lightPalette, Brightness.light);
+
+  static ThemeData get dark => _build(AppColors.darkPalette, Brightness.dark);
+
+  static ThemeData _build(Palette p, Brightness brightness) {
     final base = ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
+      brightness: brightness,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.leaf,
         primary: AppColors.leaf,
         onPrimary: Colors.white,
         secondary: AppColors.sky,
         error: AppColors.danger,
-        surface: AppColors.snow,
-        onSurface: AppColors.ink,
-        outline: AppColors.line,
-        brightness: Brightness.light,
+        surface: p.snow,
+        onSurface: p.ink,
+        outline: p.line,
+        brightness: brightness,
       ),
     );
 
@@ -86,43 +168,43 @@ class AppTheme {
     );
 
     return base.copyWith(
-      scaffoldBackgroundColor: AppColors.snow,
+      scaffoldBackgroundColor: p.snow,
       textTheme: GoogleFonts.vazirmatnTextTheme(base.textTheme).apply(
-        bodyColor: AppColors.ink,
-        displayColor: AppColors.ink,
+        bodyColor: p.ink,
+        displayColor: p.ink,
       ),
-      dividerTheme: const DividerThemeData(color: AppColors.line, thickness: 2),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
+      dividerTheme: DividerThemeData(color: p.line, thickness: 2),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
         color: AppColors.leaf,
-        linearTrackColor: AppColors.line,
+        linearTrackColor: p.line,
       ),
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: AppColors.snow,
+        backgroundColor: p.snow,
         surfaceTintColor: Colors.transparent,
-        foregroundColor: AppColors.ink,
+        foregroundColor: p.ink,
         centerTitle: true,
-        shape: const Border(
-          bottom: BorderSide(color: AppColors.line, width: 2),
+        shape: Border(
+          bottom: BorderSide(color: p.line, width: 2),
         ),
         titleTextStyle: GoogleFonts.vazirmatn(
           fontSize: 18,
           fontWeight: FontWeight.w900,
-          color: AppColors.ink,
+          color: p.ink,
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.snow,
+        color: p.snow,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: AppColors.line, width: 2),
+          side: BorderSide(color: p.line, width: 2),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.ink,
+        backgroundColor: p.ink,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         contentTextStyle: GoogleFonts.vazirmatn(
@@ -130,52 +212,52 @@ class AppTheme {
           color: Colors.white,
         ),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.snow,
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: p.snow,
         surfaceTintColor: Colors.transparent,
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.snow,
+        backgroundColor: p.snow,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.mist,
+        fillColor: p.mist,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
-          borderSide: const BorderSide(color: AppColors.line, width: 2),
+          borderSide: BorderSide(color: p.line, width: 2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
-          borderSide: const BorderSide(color: AppColors.line, width: 2),
+          borderSide: BorderSide(color: p.line, width: 2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
           borderSide: const BorderSide(color: AppColors.sky, width: 2),
         ),
-        labelStyle: GoogleFonts.vazirmatn(color: AppColors.slate),
-        hintStyle: GoogleFonts.vazirmatn(color: AppColors.locked),
+        labelStyle: GoogleFonts.vazirmatn(color: p.slate),
+        hintStyle: GoogleFonts.vazirmatn(color: p.locked),
       ),
       chipTheme: base.chipTheme.copyWith(
-        backgroundColor: AppColors.snow,
-        selectedColor: AppColors.skySoft,
-        side: const BorderSide(color: AppColors.line, width: 2),
+        backgroundColor: p.snow,
+        selectedColor: p.skySoft,
+        side: BorderSide(color: p.line, width: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         labelStyle: GoogleFonts.vazirmatn(
           fontWeight: FontWeight.w700,
-          color: AppColors.ink,
+          color: p.ink,
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.snow,
+        backgroundColor: p.snow,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: AppColors.skySoft,
+        indicatorColor: p.skySoft,
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: AppColors.skyBorder, width: 2),
+          side: BorderSide(color: p.skyBorder, width: 2),
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => GoogleFonts.vazirmatn(
@@ -183,15 +265,15 @@ class AppTheme {
             fontWeight: FontWeight.w800,
             color: states.contains(WidgetState.selected)
                 ? AppColors.skyDark
-                : AppColors.slate,
+                : p.slate,
           ),
         ),
       ),
       tabBarTheme: TabBarThemeData(
         labelColor: AppColors.skyDark,
-        unselectedLabelColor: AppColors.slate,
+        unselectedLabelColor: p.slate,
         indicatorColor: AppColors.sky,
-        dividerColor: AppColors.line,
+        dividerColor: p.line,
         overlayColor: const WidgetStatePropertyAll(Colors.transparent),
         labelStyle: GoogleFonts.vazirmatn(fontWeight: FontWeight.w800),
         unselectedLabelStyle:
@@ -226,10 +308,10 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: chunkyStyle(
-          face: AppColors.snow,
-          edge: AppColors.line,
+          face: p.snow,
+          edge: p.line,
           foreground: AppColors.sky,
-          border: AppColors.line,
+          border: p.line,
           textStyle: buttonText,
         ),
       ),

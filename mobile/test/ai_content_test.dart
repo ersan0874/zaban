@@ -101,13 +101,16 @@ void main() {
           unitTitle: 'درس',
           sessionId: 's1',
           notes: const ['نکته اول'],
-          questions: [_q('short_answer', {'question': 'پایتخت ایران؟'})],
+          questions: [
+            _q('short_answer', {'question': 'پایتخت ایران؟'})
+          ],
         ),
       ),
     );
     expect(find.text('نکته اول'), findsOneWidget);
-    await tester.tap(find.text('شروع تمرین'));
-    await tester.pumpAndSettle();
-    expect(find.text('پایتخت ایران؟'), findsOneWidget);
+    // Passing the notes page is a server step (energy), so only check the
+    // button here; the step itself is covered by the API tests.
+    expect(find.text('شروع تمرین'), findsOneWidget);
+    expect(find.text('پایتخت ایران؟'), findsNothing);
   });
 }

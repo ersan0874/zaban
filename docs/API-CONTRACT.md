@@ -30,7 +30,8 @@
 | GET | `/api/progress/:itemKind/:itemId` | Bearer | یک آیتم (`word` یا `exercise`) |
 | POST | `/api/lessons/:lessonId/sessions` | Bearer | شروع نشست موقت (بدون answer؛ ممکن است تمرین مرور تزریق شود) |
 | GET | `/api/sessions/:sessionId` | Bearer | بازیابی نشست |
-| POST | `/api/sessions/:sessionId/submit` | Bearer | ارسال پاسخ‌ها و نمره سرور |
+| POST | `/api/sessions/:sessionId/steps` | Bearer | عبور از یک صفحه (سؤال یا نکته): نمره فوری، مصرف انرژی، کومبو |
+| POST | `/api/sessions/:sessionId/submit` | Bearer | جمع‌بندی درس (پاسخ‌ها قبلاً با `steps` نمره گرفته‌اند) |
 | GET | `/api/economy/wallet` | Bearer | موجودی جم |
 | GET | `/api/economy/shop` | Bearer | کاتالوگ فروشگاه |
 | POST | `/api/economy/shop/:itemKey/buy` | Bearer | خرید با جم |
@@ -87,14 +88,46 @@ POST /api/sessions/:sessionId/submit
 - درست → فاصله مرور طبق نردبان (۱۰د، ۱س، ۱ر، ۳ر، ۷ر، …) × ease.
 - شروع نشست بعدی می‌تواند تا ۳ تمرین از بانک مرور (`isReview: true`) تزریق کند؛ IDها در `lesson_sessions.reviewExerciseIds` ذخیره می‌شوند.
 
-### Energy / Combo (فاز ۷)
+### Energy / Combo (فاز ۷، بازنویسی ADR-019)
 
-- کیف پول: `user_energy` — `balance`, `lastRegenAt`, سقف پیش‌فرض ۲۵، regen هر ۵ دقیقه ۱ واحد.
-- شروع نشست درس ۱ انرژی می‌سوزاند و در `energy_transactions` با `lesson_start` ثبت می‌شود.
-- بدون انرژی: HTTP 403 با `{ code: "INSUFFICIENT_ENERGY", energy: {...} }`.
-- بعد از submit: هر ۵ درست متوالی → `combo_reward` با رول ۱–۷؛ پاسخ شامل `comboRewards[]` و `energy`.
+- کیف پول: `user_energy` — `balance`, `lastRegenAt`, `comboStreak`؛ سقف پیش‌فرض ۲۵، regen هر ۵ دقیقه ۱ واحد.
+- **هر صفحه** (هر سؤال و هر صفحه نکته) ۱ انرژی می‌سوزاند، نه پایان درس. شروع درس چیزی نمی‌سوزاند و فقط وقتی انرژی ≥ ۱ باشد مجاز است.
+- بدون انرژی: HTTP 403 با `{ code: "INSUFFICIENT_ENERGY", energy: {...} }`؛ پیشرفت درس سر جایش می‌ماند.
+- مشترک نامحدود (`unlimited: true`) انرژی نمی‌سوزاند.
+- کومبو: هر `ENERGY_COMBO_LENGTH` (۵) صفحه پشت‌سرهم بدون اشتباه، انرژی برمی‌گردد؛ با هر پله بیشتر: پله ۱ (۵) → ۱ تا ۳، پله ۲ (۱۰) → ۲ تا ۵، پله ۳ (۱۵) → ۳ تا ۷ و … تا اولین اشتباه که رشته صفر می‌شود. رشته بین درس‌ها حفظ می‌شود. رول فقط روی سرور.
 
-پاسخ نمونه `GET /api/energy`:
+`POST /api/sessions/:sessionId/steps`
+
+```json
+// سؤال
+{ "exerciseId": "uuid", "response": { "correctOption": "abandon" } }
+// صفحه نکته (index باید < lesson.notes.length باشد)
+{ "page": "note:0" }
+```
+
+پاسخ:
+
+```json
+{
+  "key": "uuid | note:0",
+  "isCorrect": true,
+  "score": 1,
+  "feedback": null,
+  "gradingStatus": "graded",
+  "solution": "abandon",
+  "duplicate": false,
+  "energy": { "balance": 23, "cap": 25, "stepCost": 1, "comboStreak": 5, "unlimited": false },
+  "combo": { "streak": 5, "length": 5,
+             "reward": { "streak": 5, "tier": 1, "energyAwarded": 2, "rolled": 2 } }
+}
+```
+
+- تکرار همان صفحه: `duplicate: true`، بدون سوختن دوباره و بدون `combo`.
+- پاسخ بدون نمره (`pending`/`ungraded`، هوش مصنوعی در دسترس نیست) اشتباه حساب نمی‌شود و رشته را نمی‌شکند.
+- `solution` فقط بعد از پاسخ دادن همان تمرین برگردانده می‌شود.
+- `submit` فقط تمرین‌هایی را می‌پذیرد که قبلاً با `steps` رد شده‌اند و `comboRewards` همان درس را برمی‌گرداند.
+
+`GET /api/energy`:
 
 ```json
 {
@@ -103,9 +136,14 @@ POST /api/sessions/:sessionId/submit
   "regenIntervalMinutes": 5,
   "nextRegenAt": "2026-09-12T12:00:00.000Z",
   "millisUntilNextRegen": 120000,
-  "lessonCost": 1
+  "stepCost": 1,
+  "lessonCost": 1,
+  "comboStreak": 3,
+  "unlimited": false
 }
 ```
+
+(`lessonCost` فقط نام قدیمی `stepCost` برای کلاینت‌های قدیمی است.)
 
 ### Gamification (فاز ۸)
 

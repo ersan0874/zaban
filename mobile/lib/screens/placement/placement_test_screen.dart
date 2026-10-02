@@ -178,7 +178,7 @@ class _PlacementTestScreenState extends State<PlacementTestScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.cloud_off_rounded,
               size: 64,
               color: AppColors.locked,

@@ -167,7 +167,7 @@ class _ChatScreenState extends State<ChatScreen> {
               top: false,
               child: Container(
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.snow,
                   border: Border(
                     top: BorderSide(color: AppColors.line, width: 2),

@@ -614,7 +614,7 @@ class _OrderBankModuleState extends State<OrderBankModule> {
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border.symmetric(
                 horizontal: BorderSide(color: AppColors.line, width: 2),
               ),

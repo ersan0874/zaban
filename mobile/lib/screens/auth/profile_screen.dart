@@ -4,6 +4,8 @@ import 'package:zaban/repositories/curriculum_repository.dart';
 import 'package:zaban/repositories/mastery_repository.dart';
 import 'package:zaban/screens/subscription/super_subscription_screen.dart';
 import 'package:zaban/services/auth_api.dart';
+import 'package:zaban/services/app_settings.dart';
+import 'package:zaban/services/feedback_fx.dart';
 import 'package:zaban/theme/app_theme.dart';
 import 'package:zaban/widgets/zaban_ui.dart';
 
@@ -246,6 +248,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 maxLines: 3,
                 decoration: const InputDecoration(labelText: 'درباره من'),
               ),
+              const ZSectionTitle('ظاهر و صدا'),
+              ZCard(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: Text(
+                        'حالت تاریک',
+                        style: GoogleFonts.vazirmatn(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      value: AppColors.isDark,
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: AppColors.leaf,
+                      onChanged: (v) => AppSettings.setTheme(
+                        v ? ThemeMode.dark : ThemeMode.light,
+                      ),
+                    ),
+                    Divider(height: 2, color: AppColors.line),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: FeedbackFx.soundOn,
+                      builder: (context, on, _) => SwitchListTile(
+                        title: Text(
+                          'صدا و لرزش',
+                          style: GoogleFonts.vazirmatn(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        value: on,
+                        activeThumbColor: Colors.white,
+                        activeTrackColor: AppColors.leaf,
+                        onChanged: AppSettings.setSound,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const ZSectionTitle('اعلان‌ها'),
               ZCard(
                 padding: const EdgeInsets.symmetric(vertical: 4),
@@ -263,7 +303,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       activeTrackColor: AppColors.leaf,
                       onChanged: (v) => setState(() => _notifications = v),
                     ),
-                    const Divider(height: 2, color: AppColors.line),
+                    Divider(height: 2, color: AppColors.line),
                     SwitchListTile(
                       title: Text(
                         'یادآوری روزانه',

@@ -118,7 +118,7 @@ class _LeagueTabState extends State<LeagueTab> {
               child: Column(
                 children: [
                   for (final (i, e) in entries.indexed) ...[
-                    if (i > 0) const Divider(height: 2, color: AppColors.line),
+                    if (i > 0) Divider(height: 2, color: AppColors.line),
                     Container(
                       color: e.isYou ? AppColors.skySoft : null,
                       padding: const EdgeInsets.symmetric(

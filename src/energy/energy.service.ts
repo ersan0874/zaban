@@ -20,6 +20,8 @@ export type EnergySnapshot = {
   stepCost: number;
   lessonCost: number;
   comboStreak: number;
+  /** Unlimited-energy subscriber: pages do not burn energy. */
+  unlimited: boolean;
 };
 
 export type ComboRewardEvent = {
@@ -53,7 +55,7 @@ export class EnergyService {
 
   async getSnapshot(userId: string): Promise<EnergySnapshot> {
     const wallet = await this.applyRegen(userId);
-    return this.toSnapshot(wallet);
+    return this.toSnapshot(wallet, await this.hasUnlimited(userId));
   }
 
   /** Server-side grant (loot / admin). Caps at ENERGY_CAP. */
@@ -93,13 +95,11 @@ export class EnergyService {
    */
   async assertCanStart(userId: string): Promise<EnergySnapshot> {
     const wallet = await this.applyRegen(userId);
-    if (
-      !(await this.hasUnlimited(userId)) &&
-      wallet.balance < this.energyConfig.stepCost
-    ) {
+    const unlimited = await this.hasUnlimited(userId);
+    if (!unlimited && wallet.balance < this.energyConfig.stepCost) {
       throw this.insufficient(wallet);
     }
-    return this.toSnapshot(wallet);
+    return this.toSnapshot(wallet, unlimited);
   }
 
   /**
@@ -170,7 +170,7 @@ export class EnergyService {
 
       await manager.save(wallet);
       return {
-        energy: this.toSnapshot(wallet),
+        energy: this.toSnapshot(wallet, unlimited),
         combo: {
           streak: wallet.comboStreak,
           length: this.energyConfig.comboLength,
@@ -294,7 +294,7 @@ export class EnergyService {
     return saved;
   }
 
-  private toSnapshot(wallet: UserEnergy): EnergySnapshot {
+  private toSnapshot(wallet: UserEnergy, unlimited = false): EnergySnapshot {
     const cap = this.energyConfig.cap;
     const interval = this.energyConfig.regenIntervalMs;
     const intervalMinutes = Math.round(interval / 60_000);
@@ -309,6 +309,7 @@ export class EnergyService {
         stepCost: this.energyConfig.stepCost,
         lessonCost: this.energyConfig.stepCost,
         comboStreak: wallet.comboStreak ?? 0,
+        unlimited,
       };
     }
 
@@ -322,6 +323,7 @@ export class EnergyService {
       stepCost: this.energyConfig.stepCost,
       lessonCost: this.energyConfig.stepCost,
       comboStreak: wallet.comboStreak ?? 0,
+      unlimited,
     };
   }
 }
