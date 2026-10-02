@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/models/word_model.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/zaban_ui.dart';
 
 class WordStudyScreen extends StatefulWidget {
   const WordStudyScreen({
@@ -53,55 +54,48 @@ class _WordStudyScreenState extends State<WordStudyScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF7FBFC), AppColors.mist, Color(0xFFE8F4F2)],
-          ),
-        ),
+        color: AppColors.snow,
         child: SafeArea(
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 16, 8),
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 4),
                 child: Row(
                   children: [
                     IconButton(
+                      tooltip: 'بستن',
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                      color: AppColors.inkSoft,
+                      icon: const Icon(Icons.close_rounded, size: 28),
+                      color: AppColors.locked,
                     ),
+                    const SizedBox(width: 4),
                     Expanded(
-                      child: Text(
-                        widget.unitTitle,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.vazirmatn(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
-                        ),
+                      child: ZProgressBar(
+                        value: total == 0 ? 0 : (_currentPage + 1) / total,
+                        color: AppColors.sky,
+                        height: 16,
                       ),
                     ),
+                    const SizedBox(width: 12),
                     Text(
                       '${_currentPage + 1}/$total',
-                      style: GoogleFonts.dmSans(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.tealDeep,
+                      style: AppTheme.latin(
+                        fontSize: 15,
+                        color: AppColors.slate,
                       ),
                     ),
                   ],
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(99),
-                  child: LinearProgressIndicator(
-                    value: total == 0 ? 0 : (_currentPage + 1) / total,
-                    minHeight: 6,
-                    backgroundColor: AppColors.mistDeep,
-                    color: AppColors.teal,
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                child: Text(
+                  widget.unitTitle,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.vazirmatn(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.slate,
                   ),
                 ),
               ),
@@ -110,7 +104,8 @@ class _WordStudyScreenState extends State<WordStudyScreen> {
                 child: PageView.builder(
                   controller: _pageController,
                   itemCount: total,
-                  onPageChanged: (index) => setState(() => _currentPage = index),
+                  onPageChanged: (index) =>
+                      setState(() => _currentPage = index),
                   itemBuilder: (context, index) {
                     return _WordPage(word: widget.words[index]);
                   },
@@ -130,7 +125,8 @@ class _WordStudyScreenState extends State<WordStudyScreen> {
                                 ),
                         child: Text(
                           'قبلی',
-                          style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
+                          style: GoogleFonts.vazirmatn(
+                              fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
@@ -145,7 +141,8 @@ class _WordStudyScreenState extends State<WordStudyScreen> {
                                 ),
                         child: Text(
                           _currentPage >= total - 1 ? 'پایان' : 'بعدی',
-                          style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
+                          style: GoogleFonts.vazirmatn(
+                              fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
@@ -172,26 +169,35 @@ class _WordPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 12),
-          Text(
-            word.word,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.fraunces(
-              fontSize: 44,
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink,
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            word.persianMeaning,
-            textAlign: TextAlign.center,
-            textDirection: TextDirection.rtl,
-            style: GoogleFonts.vazirmatn(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: AppColors.tealDeep,
+          ZCard(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+            child: Column(
+              children: [
+                Text(
+                  word.word,
+                  textAlign: TextAlign.center,
+                  style: AppTheme.latin(fontSize: 40, color: AppColors.ink),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.skySoft,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    word.persianMeaning,
+                    textAlign: TextAlign.center,
+                    textDirection: TextDirection.rtl,
+                    style: GoogleFonts.vazirmatn(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.skyDark,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 28),
@@ -200,9 +206,9 @@ class _WordPage extends StatelessWidget {
             textAlign: TextAlign.right,
             textDirection: TextDirection.rtl,
             style: GoogleFonts.vazirmatn(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.slate,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: AppColors.ink,
             ),
           ),
           const SizedBox(height: 10),
@@ -218,16 +224,15 @@ class _WordPage extends StatelessWidget {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.tealSoft.withValues(alpha: 0.65),
+                      color: AppColors.snow,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.teal.withValues(alpha: 0.25),
-                      ),
+                      border: Border.all(color: AppColors.line, width: 2),
                     ),
                     child: Text(
                       s,
-                      style: GoogleFonts.dmSans(
-                        fontWeight: FontWeight.w600,
+                      style: AppTheme.latin(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                         color: AppColors.inkSoft,
                       ),
                     ),
@@ -241,9 +246,9 @@ class _WordPage extends StatelessWidget {
             textAlign: TextAlign.right,
             textDirection: TextDirection.rtl,
             style: GoogleFonts.vazirmatn(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.slate,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: AppColors.ink,
             ),
           ),
           const SizedBox(height: 12),
@@ -253,21 +258,20 @@ class _WordPage extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.72),
+                color: AppColors.snow,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.mistDeep),
+                border: Border.all(color: AppColors.line, width: 2),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     example.english,
-                    style: GoogleFonts.dmSans(
+                    style: AppTheme.latin(
                       fontSize: 16,
-                      height: 1.45,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.ink,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    ).copyWith(height: 1.45),
                   ),
                   const SizedBox(height: 10),
                   Text(

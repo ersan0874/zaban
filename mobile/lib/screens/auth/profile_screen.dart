@@ -5,6 +5,7 @@ import 'package:zaban/repositories/mastery_repository.dart';
 import 'package:zaban/screens/subscription/super_subscription_screen.dart';
 import 'package:zaban/services/auth_api.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/zaban_ui.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -124,152 +125,187 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final displayName =
+        _name.text.trim().isNotEmpty ? _name.text.trim() : (_email ?? '');
     final body = _loading
         ? const Center(child: CircularProgressIndicator())
         : ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
             children: [
-              if (_email != null)
+              Center(child: ZAvatar(name: displayName, size: 96)),
+              const SizedBox(height: 12),
+              Text(
+                displayName,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.vazirmatn(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              if (_email != null && _email != displayName)
                 Text(
                   _email!,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(color: AppColors.slate),
-                ),
-              const SizedBox(height: 8),
-              Text(
-                'سطح: $_levelFa'
-                '${_masteryScore != null ? ' · تسلط ${_masteryScore!.round()}٪' : ''}',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.vazirmatn(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.tealDeep,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Material(
-                color: const Color(0xFFFFF4D6),
-                borderRadius: BorderRadius.circular(18),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const SuperSubscriptionScreen(),
-                      ),
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.amber.withValues(alpha: 0.25),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.workspace_premium_rounded,
-                            color: Color(0xFFB45309),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'ارتقا به Super',
-                                style: GoogleFonts.vazirmatn(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                'قلب نامحدود و تجربه بدون وقفه',
-                                style: GoogleFonts.vazirmatn(
-                                  fontSize: 13,
-                                  color: AppColors.inkSoft,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.chevron_left_rounded),
-                      ],
-                    ),
+                  style: AppTheme.latin(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.slate,
                   ),
                 ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: ZStatTile(
+                      icon: Icons.signal_cellular_alt_rounded,
+                      color: AppColors.sky,
+                      value: _levelFa,
+                      label: 'سطح',
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ZStatTile(
+                      icon: Icons.workspace_premium_rounded,
+                      color: AppColors.sun,
+                      value: _masteryScore != null
+                          ? '${_masteryScore!.round()}%'
+                          : '—',
+                      label: 'تسلط دوره',
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+              ZCard(
+                color: AppColors.ink,
+                borderColor: AppColors.ink,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const SuperSubscriptionScreen(),
+                    ),
+                  );
+                },
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.grape, AppColors.sky],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.workspace_premium_rounded,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ارتقا به Super',
+                            style: GoogleFonts.vazirmatn(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            'قلب نامحدود و تجربه بدون وقفه',
+                            style: GoogleFonts.vazirmatn(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_left_rounded,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
+              ),
+              const ZSectionTitle('حساب من'),
               TextField(
                 controller: _name,
                 textDirection: TextDirection.rtl,
-                decoration: InputDecoration(
-                  labelText: 'نام نمایشی',
-                  labelStyle: GoogleFonts.vazirmatn(),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
+                decoration: const InputDecoration(labelText: 'نام نمایشی'),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _bio,
                 textDirection: TextDirection.rtl,
                 maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: 'درباره من',
-                  labelStyle: GoogleFonts.vazirmatn(),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
+                decoration: const InputDecoration(labelText: 'درباره من'),
               ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                title: Text('اعلان‌ها', style: GoogleFonts.vazirmatn()),
-                value: _notifications,
-                activeThumbColor: AppColors.teal,
-                onChanged: (v) => setState(() => _notifications = v),
-              ),
-              SwitchListTile(
-                title: Text(
-                  'یادآوری روزانه',
-                  style: GoogleFonts.vazirmatn(),
+              const ZSectionTitle('اعلان‌ها'),
+              ZCard(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: Text(
+                        'اعلان‌ها',
+                        style: GoogleFonts.vazirmatn(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      value: _notifications,
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: AppColors.leaf,
+                      onChanged: (v) => setState(() => _notifications = v),
+                    ),
+                    const Divider(height: 2, color: AppColors.line),
+                    SwitchListTile(
+                      title: Text(
+                        'یادآوری روزانه',
+                        style: GoogleFonts.vazirmatn(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      value: _dailyReminder,
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: AppColors.leaf,
+                      onChanged: (v) => setState(() => _dailyReminder = v),
+                    ),
+                  ],
                 ),
-                value: _dailyReminder,
-                activeThumbColor: AppColors.teal,
-                onChanged: (v) => setState(() => _dailyReminder = v),
               ),
               if (_error != null)
                 Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.only(top: 12),
                   child: Text(
                     _error!,
-                    style: GoogleFonts.vazirmatn(color: AppColors.danger),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.vazirmatn(
+                      color: AppColors.danger,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _saving ? null : _save,
-                child: Text(
-                  'ذخیره',
-                  style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
-                ),
+                child: const Text('ذخیره'),
               ),
               const SizedBox(height: 12),
               OutlinedButton(
-                onPressed: _logout,
-                child: Text(
-                  'خروج از حساب',
-                  style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
+                style: AppTheme.chunkyStyle(
+                  face: AppColors.snow,
+                  edge: AppColors.line,
+                  border: AppColors.line,
+                  foreground: AppColors.danger,
                 ),
+                onPressed: _logout,
+                child: const Text('خروج از حساب'),
               ),
             ],
           );
@@ -277,18 +313,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.mist,
         appBar: widget.embedded
             ? AppBar(
                 automaticallyImplyLeading: false,
-                title: Text(
-                  'پروفایل من',
-                  style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w800),
-                ),
+                title: const Text('پروفایل من'),
               )
-            : AppBar(
-                title: Text('پروفایل', style: GoogleFonts.vazirmatn()),
-              ),
+            : AppBar(title: const Text('پروفایل')),
         body: body,
       ),
     );

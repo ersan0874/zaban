@@ -116,13 +116,7 @@ class AuthScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF7FBFC), AppColors.mist, AppColors.mistDeep],
-          ),
-        ),
+        color: AppColors.snow,
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(
@@ -131,12 +125,38 @@ class AuthScaffold extends StatelessWidget {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
+                    Container(
+                      width: 88,
+                      height: 88,
+                      padding: const EdgeInsets.only(bottom: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.leafDark,
+                        borderRadius: BorderRadius.circular(26),
+                      ),
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.leaf,
+                          borderRadius: BorderRadius.circular(26),
+                        ),
+                        child: Text(
+                          'ز',
+                          style: GoogleFonts.vazirmatn(
+                            fontSize: 44,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Text(
                       'زبان',
                       style: GoogleFonts.vazirmatn(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.ink,
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.leaf,
                       ),
                     ),
                     const SizedBox(height: 8),

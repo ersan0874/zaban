@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/screens/club/league_tab.dart';
 import 'package:zaban/screens/gamification/gamification_screen.dart';
 import 'package:zaban/screens/shop/shop_screen.dart';
@@ -16,22 +15,24 @@ class ClubHubScreen extends StatelessWidget {
       child: DefaultTabController(
         length: 3,
         child: Scaffold(
-          backgroundColor: AppColors.mist,
           appBar: AppBar(
-            title: Text(
-              'باشگاه',
-              style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w800),
-            ),
-            bottom: TabBar(
-              labelStyle: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
-              unselectedLabelStyle: GoogleFonts.vazirmatn(),
-              indicatorColor: AppColors.tealDeep,
-              labelColor: AppColors.tealDeep,
-              unselectedLabelColor: AppColors.slate,
-              tabs: const [
-                Tab(text: 'بازی'),
-                Tab(text: 'لیگ'),
-                Tab(text: 'فروشگاه'),
+            title: const Text('باشگاه'),
+            bottom: const TabBar(
+              indicatorWeight: 4,
+              indicatorSize: TabBarIndicatorSize.label,
+              tabs: [
+                Tab(
+                  icon: Icon(Icons.emoji_events_rounded, color: AppColors.sun),
+                  text: 'پیشرفت',
+                ),
+                Tab(
+                  icon: Icon(Icons.shield_rounded, color: AppColors.flame),
+                  text: 'لیگ',
+                ),
+                Tab(
+                  icon: Icon(Icons.storefront_rounded, color: AppColors.grape),
+                  text: 'فروشگاه',
+                ),
               ],
             ),
           ),

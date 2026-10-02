@@ -4,6 +4,7 @@ import 'package:zaban/repositories/social_repository.dart';
 import 'package:zaban/screens/social/chat_screen.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/zaban_ui.dart';
 
 class SocialHubScreen extends StatefulWidget {
   const SocialHubScreen({super.key});
@@ -85,7 +86,8 @@ class _SocialHubScreenState extends State<SocialHubScreen>
       _friendCtrl.clear();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('درخواست دوستی ارسال شد', style: GoogleFonts.vazirmatn()),
+          content:
+              Text('درخواست دوستی ارسال شد', style: GoogleFonts.vazirmatn()),
         ),
       );
       await _load();
@@ -129,49 +131,38 @@ class _SocialHubScreenState extends State<SocialHubScreen>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.mist,
         appBar: AppBar(
-          title: Text(
-            'دوستان',
-            style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w800),
-          ),
+          title: const Text('دوستان'),
           bottom: TabBar(
             controller: _tabs,
-            labelStyle: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
-            unselectedLabelStyle: GoogleFonts.vazirmatn(),
-            indicatorColor: AppColors.tealDeep,
-            labelColor: AppColors.tealDeep,
-            unselectedLabelColor: AppColors.slate,
+            indicatorWeight: 4,
+            indicatorSize: TabBarIndicatorSize.label,
             tabs: const [
-              Tab(text: 'فید'),
-              Tab(text: 'دوستان'),
+              Tab(
+                icon: Icon(Icons.dynamic_feed_rounded, color: AppColors.sky),
+                text: 'فید',
+              ),
+              Tab(
+                icon: Icon(Icons.people_rounded, color: AppColors.grape),
+                text: 'دوستان',
+              ),
             ],
           ),
           actions: [
             IconButton(
               onPressed: _loading ? null : _load,
-              icon: const Icon(Icons.refresh_rounded),
+              icon: const Icon(Icons.refresh_rounded, color: AppColors.locked),
             ),
           ],
         ),
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!, style: GoogleFonts.vazirmatn()),
-                        const SizedBox(height: 12),
-                        FilledButton(
-                          onPressed: _load,
-                          child: Text(
-                            'تلاش دوباره',
-                            style: GoogleFonts.vazirmatn(),
-                          ),
-                        ),
-                      ],
-                    ),
+                ? ZMessage(
+                    icon: Icons.people_outline_rounded,
+                    text: _error!,
+                    actionLabel: 'تلاش دوباره',
+                    onAction: _load,
                   )
                 : TabBarView(
                     controller: _tabs,
@@ -188,67 +179,68 @@ class _SocialHubScreenState extends State<SocialHubScreen>
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          Container(
+          ZCard(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.mistDeep),
-            ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 TextField(
                   controller: _feedCtrl,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'چه خبر؟ یک پست کوتاه بنویس…',
-                    hintStyle: GoogleFonts.vazirmatn(color: AppColors.slate),
-                    border: InputBorder.none,
                   ),
-                  style: GoogleFonts.vazirmatn(),
                   maxLines: 2,
                 ),
+                const SizedBox(height: 10),
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerEnd,
                   child: FilledButton(
                     onPressed: _busy ? null : _postFeed,
-                    child: Text('ارسال', style: GoogleFonts.vazirmatn()),
+                    child: const Text('ارسال'),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const ZSectionTitle('فعالیت‌ها'),
           if (_feed.isEmpty)
-            Text(
-              'هنوز فعالیتی نیست. یک درس تمام کن یا پست بگذار.',
-              style: GoogleFonts.vazirmatn(color: AppColors.slate),
+            const ZMessage(
+              icon: Icons.forum_rounded,
+              color: AppColors.skyBorder,
+              text: 'هنوز فعالیتی نیست. یک درس تمام کن یا پست بگذار.',
             )
           else
             ..._feed.map(
-              (item) => Container(
+              (item) => ZCard(
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.mistDeep),
-                ),
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.displayName,
-                      style: GoogleFonts.vazirmatn(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.tealDeep,
+                    ZAvatar(name: item.displayName, size: 40),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.displayName,
+                            style: GoogleFonts.vazirmatn(
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item.message,
+                            style: GoogleFonts.vazirmatn(
+                              height: 1.5,
+                              color: AppColors.inkSoft,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.message,
-                      style: GoogleFonts.vazirmatn(height: 1.4),
                     ),
                   ],
                 ),
@@ -263,80 +255,101 @@ class _SocialHubScreenState extends State<SocialHubScreen>
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          Container(
+          ZCard(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.mistDeep),
-            ),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _friendCtrl,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'ایمیل یا شناسه کاربر',
-                      hintStyle: GoogleFonts.vazirmatn(color: AppColors.slate),
-                      border: InputBorder.none,
                     ),
-                    style: GoogleFonts.vazirmatn(),
                   ),
                 ),
+                const SizedBox(width: 10),
                 FilledButton(
+                  style: AppTheme.chunkyStyle(
+                    face: AppColors.sky,
+                    edge: AppColors.skyDark,
+                    foreground: Colors.white,
+                  ),
                   onPressed: _busy ? null : _addFriend,
-                  child: Text('دعوت', style: GoogleFonts.vazirmatn()),
+                  child: const Text('دعوت'),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const ZSectionTitle('دوستان من'),
           if (_friends.isEmpty)
-            Text(
-              'هنوز دوستی نداری. با ایمیل دعوت کن.',
-              style: GoogleFonts.vazirmatn(color: AppColors.slate),
+            const ZMessage(
+              icon: Icons.person_add_alt_1_rounded,
+              color: AppColors.grape,
+              text: 'هنوز دوستی نداری. با ایمیل دعوت کن تا با هم یاد بگیرید.',
             )
           else
-            ..._friends.map((f) {
-              final streak = _streakFor(f.userId);
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.mistDeep),
-                ),
-                child: ListTile(
-                  title: Text(
-                    f.displayName,
-                    style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
-                  ),
-                  subtitle: Text(
-                    'استریک $streak روز',
-                    style: GoogleFonts.vazirmatn(fontSize: 12),
-                  ),
-                  trailing: IconButton(
-                    tooltip: 'چت',
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => ChatScreen(
-                            peerUserId: f.userId,
-                            peerName: f.displayName,
+            ZCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (final (i, f) in _friends.indexed) ...[
+                    if (i > 0) const Divider(height: 2, color: AppColors.line),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        children: [
+                          ZAvatar(name: f.displayName),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              f.displayName,
+                              style: GoogleFonts.vazirmatn(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      color: AppColors.tealDeep,
+                          const Icon(
+                            Icons.local_fire_department_rounded,
+                            color: AppColors.flame,
+                            size: 20,
+                          ),
+                          Text(
+                            '${_streakFor(f.userId)}',
+                            style: AppTheme.latin(
+                              fontSize: 15,
+                              color: AppColors.flame,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            tooltip: 'چت',
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ChatScreen(
+                                    peerUserId: f.userId,
+                                    peerName: f.displayName,
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.chat_bubble_rounded,
+                              color: AppColors.sky,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              );
-            }),
+                  ],
+                ],
+              ),
+            ),
         ],
       ),
     );

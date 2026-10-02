@@ -4,6 +4,7 @@ import 'package:zaban/models/question_model.dart';
 import 'package:zaban/screens/home/home_shell.dart';
 import 'package:zaban/services/placement_test_service.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/zaban_ui.dart';
 import 'package:zaban/widgets/placement_question_view.dart';
 
 class PlacementTestScreen extends StatefulWidget {
@@ -139,13 +140,7 @@ class _PlacementTestScreenState extends State<PlacementTestScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF7FBFC), AppColors.mist, Color(0xFFE5F0F2)],
-          ),
-        ),
+        color: AppColors.snow,
         child: SafeArea(
           child: _loading
               ? _buildLoading()
@@ -183,7 +178,11 @@ class _PlacementTestScreenState extends State<PlacementTestScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 64,
+              color: AppColors.locked,
+            ),
             const SizedBox(height: 16),
             Text(
               _error ?? 'خطای ناشناخته',
@@ -223,8 +222,9 @@ class _PlacementTestScreenState extends State<PlacementTestScreen> {
               Text(
                 'آزمون تعیین سطح',
                 style: GoogleFonts.vazirmatn(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.leaf,
                 ),
               ),
               const SizedBox(height: 4),
@@ -243,23 +243,16 @@ class _PlacementTestScreenState extends State<PlacementTestScreen> {
           child: Row(
             children: [
               Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(99),
-                  child: LinearProgressIndicator(
-                    value: (_index + 1) / total,
-                    minHeight: 6,
-                    backgroundColor: AppColors.mistDeep,
-                    color: AppColors.tealDeep,
-                  ),
+                child: ZProgressBar(
+                  value: (_index + 1) / total,
+                  color: AppColors.leaf,
+                  height: 16,
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 '${_index + 1}/$total',
-                style: GoogleFonts.dmSans(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.tealDeep,
-                ),
+                style: AppTheme.latin(fontSize: 15, color: AppColors.slate),
               ),
             ],
           ),
@@ -279,7 +272,8 @@ class _PlacementTestScreenState extends State<PlacementTestScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const CircularProgressIndicator(color: AppColors.tealDeep),
+                      const CircularProgressIndicator(
+                          color: AppColors.tealDeep),
                       const SizedBox(height: 16),
                       Text(
                         'در حال محاسبه سطح...',

@@ -4,6 +4,7 @@ import 'package:zaban/repositories/gamification_repository.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/screens/shop/shop_screen.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/zaban_ui.dart';
 
 class GamificationScreen extends StatefulWidget {
   const GamificationScreen({super.key, this.embedded = false});
@@ -99,166 +100,243 @@ class _GamificationScreenState extends State<GamificationScreen> {
     final body = _loading
         ? const Center(child: CircularProgressIndicator())
         : _error != null
-            ? Center(
-                child: Text(_error!, style: GoogleFonts.vazirmatn()),
+            ? ZMessage(
+                icon: Icons.cloud_off_rounded,
+                text: _error!,
+                actionLabel: 'تلاش دوباره',
+                onAction: _load,
               )
             : RefreshIndicator(
                 onRefresh: _load,
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                   children: [
-                    Row(
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 2.4,
                       children: [
-                        _StatCard(
-                          label: 'XP',
-                          value: '${g?.xp ?? 0}',
-                          color: AppColors.tealDeep,
-                        ),
-                        const SizedBox(width: 8),
-                        _StatCard(
-                          label: 'استریک',
+                        ZStatTile(
+                          icon: Icons.local_fire_department_rounded,
+                          color: AppColors.flame,
                           value: '${g?.streakCount ?? 0}',
-                          color: AppColors.amber,
+                          label: 'روز استریک',
                         ),
-                        const SizedBox(width: 8),
-                        _StatCard(
-                          label: 'قلب',
+                        ZStatTile(
+                          icon: Icons.bolt_rounded,
+                          color: AppColors.sun,
+                          value: '${g?.xp ?? 0}',
+                          label: 'XP کل',
+                        ),
+                        ZStatTile(
+                          icon: Icons.favorite_rounded,
+                          color: AppColors.coral,
                           value: '${g?.hearts ?? 0}/${g?.heartsCap ?? 5}',
-                          color: AppColors.danger,
+                          label: 'قلب',
+                        ),
+                        ZStatTile(
+                          icon: Icons.school_rounded,
+                          color: AppColors.leaf,
+                          value: '${g?.lessonsCompleted ?? 0}',
+                          label: 'درس تمام‌شده',
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      g?.clubUnlocked == true
-                          ? 'باشگاه باز است ✓'
-                          : 'باشگاه هنوز قفل است (استریک ۷ یا ۵۰۰ XP)',
-                      style: GoogleFonts.vazirmatn(color: AppColors.slate),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'کوئست روزانه',
-                      style: GoogleFonts.vazirmatn(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                    ZCard(
+                      color: g?.clubUnlocked == true
+                          ? AppColors.leafSoft
+                          : AppColors.mist,
+                      borderColor: g?.clubUnlocked == true
+                          ? AppColors.leaf
+                          : AppColors.line,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            g?.clubUnlocked == true
+                                ? Icons.lock_open_rounded
+                                : Icons.lock_rounded,
+                            color: g?.clubUnlocked == true
+                                ? AppColors.leafDark
+                                : AppColors.locked,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              g?.clubUnlocked == true
+                                  ? 'باشگاه برایت باز است'
+                                  : 'باشگاه با ۷ روز استریک یا ۵۰۰ XP باز می‌شود',
+                              style: GoogleFonts.vazirmatn(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.inkSoft,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    ...?(g?.quests.map((q) {
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.mistDeep),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                    const ZSectionTitle('کوئست‌های روزانه'),
+                    ZCard(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        children: [
+                          for (final (i, q) in (g?.quests ?? []).indexed) ...[
+                            if (i > 0)
+                              const Divider(height: 2, color: AppColors.line),
+                            Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    q.title,
-                                    style: GoogleFonts.vazirmatn(
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                  Icon(
+                                    q.completed
+                                        ? Icons.check_circle_rounded
+                                        : Icons.bolt_rounded,
+                                    color: q.completed
+                                        ? AppColors.leaf
+                                        : AppColors.sun,
+                                    size: 34,
                                   ),
-                                  Text(
-                                    '${q.progress}/${q.target}',
-                                    style: GoogleFonts.vazirmatn(
-                                      color: AppColors.slate,
-                                      fontSize: 12,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          q.title,
+                                          style: GoogleFonts.vazirmatn(
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: ZProgressBar(
+                                                value: q.target == 0
+                                                    ? 0
+                                                    : q.progress / q.target,
+                                                color: q.completed
+                                                    ? AppColors.leaf
+                                                    : AppColors.sun,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              '${q.progress}/${q.target}',
+                                              style: AppTheme.latin(
+                                                fontSize: 13,
+                                                color: AppColors.slate,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            Icon(
-                              q.completed
-                                  ? Icons.check_circle
-                                  : Icons.radio_button_unchecked,
-                              color: q.completed
-                                  ? AppColors.success
-                                  : AppColors.locked,
+                          ],
+                          if ((g?.quests ?? []).isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(
+                                'کوئست امروز هنوز آماده نیست.',
+                                style: GoogleFonts.vazirmatn(
+                                  color: AppColors.slate,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const ZSectionTitle('جعبه‌های جایزه'),
+                    if ((g?.lootBoxes ?? []).isEmpty)
+                      ZCard(
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.card_giftcard_rounded,
+                              color: AppColors.locked,
+                              size: 32,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'هر ۳ درس یک جعبه جایزه می‌گیری.',
+                                style: GoogleFonts.vazirmatn(
+                                  color: AppColors.slate,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                      );
-                    })),
-                    const SizedBox(height: 16),
-                    Text(
-                      'نشان‌ها',
-                      style: GoogleFonts.vazirmatn(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if ((g?.badges ?? []).isEmpty)
-                      Text(
-                        'هنوز نشانی نداری — یک درس تمام کن.',
-                        style: GoogleFonts.vazirmatn(color: AppColors.slate),
-                      )
-                    else
-                      ...g!.badges.map(
-                        (b) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            b.title,
-                            style: GoogleFonts.vazirmatn(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          subtitle: Text(
-                            b.pinned ? 'پین شده روی پروفایل' : b.badgeKey,
-                            style: GoogleFonts.vazirmatn(fontSize: 12),
-                          ),
-                          trailing: IconButton(
-                            onPressed: () => _togglePin(b),
-                            icon: Icon(
-                              b.pinned
-                                  ? Icons.push_pin
-                                  : Icons.push_pin_outlined,
-                              color: AppColors.tealDeep,
-                            ),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'جعبه جایزه',
-                      style: GoogleFonts.vazirmatn(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if ((g?.lootBoxes ?? []).isEmpty)
-                      Text(
-                        'هر ۳ درس یک جعبه می‌گیری.',
-                        style: GoogleFonts.vazirmatn(color: AppColors.slate),
                       )
                     else
                       ...g!.lootBoxes.map(
-                        (box) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            'جعبه بسته',
-                            style: GoogleFonts.vazirmatn(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          trailing: FilledButton(
-                            onPressed:
-                                _opening ? null : () => _openLoot(box.id),
-                            child: Text(
-                              'باز کن',
-                              style: GoogleFonts.vazirmatn(),
-                            ),
+                        (box) => ZCard(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          color: AppColors.sunSoft,
+                          borderColor: AppColors.sun,
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.card_giftcard_rounded,
+                                color: AppColors.sunDark,
+                                size: 36,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'یک جعبه جایزه داری!',
+                                  style: GoogleFonts.vazirmatn(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              ElevatedButton(
+                                style: AppTheme.chunkyStyle(
+                                  face: AppColors.sun,
+                                  edge: AppColors.sunDark,
+                                  foreground: AppColors.ink,
+                                ),
+                                onPressed:
+                                    _opening ? null : () => _openLoot(box.id),
+                                child: const Text('باز کن'),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                    const ZSectionTitle('نشان‌ها'),
+                    if ((g?.badges ?? []).isEmpty)
+                      ZCard(
+                        child: Text(
+                          'هنوز نشانی نداری. یک درس تمام کن.',
+                          style: GoogleFonts.vazirmatn(color: AppColors.slate),
+                        ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: g!.badges
+                            .map(
+                              (b) => _BadgeChip(
+                                badge: b,
+                                onTap: () => _togglePin(b),
+                              ),
+                            )
+                            .toList(),
                       ),
                   ],
                 ),
@@ -267,14 +345,13 @@ class _GamificationScreenState extends State<GamificationScreen> {
     if (widget.embedded) {
       return Directionality(
         textDirection: TextDirection.rtl,
-        child: ColoredBox(color: AppColors.mist, child: body),
+        child: ColoredBox(color: AppColors.snow, child: body),
       );
     }
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.mist,
         appBar: AppBar(
           title: Text(
             'پیشرفت بازی',
@@ -304,40 +381,47 @@ class _GamificationScreenState extends State<GamificationScreen> {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+class _BadgeChip extends StatelessWidget {
+  const _BadgeChip({required this.badge, required this.onTap});
 
-  final String label;
-  final String value;
-  final Color color;
+  final BadgeItem badge;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.mistDeep),
-        ),
+    return SizedBox(
+      width: 104,
+      child: ZCard(
+        onTap: onTap,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        borderColor: badge.pinned ? AppColors.grape : AppColors.line,
         child: Column(
           children: [
-            Text(
-              value,
-              style: GoogleFonts.vazirmatn(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: color,
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: badge.pinned ? AppColors.grape : AppColors.sun,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                badge.pinned
+                    ? Icons.push_pin_rounded
+                    : Icons.military_tech_rounded,
+                color: Colors.white,
+                size: 30,
               ),
             ),
+            const SizedBox(height: 8),
             Text(
-              label,
-              style: GoogleFonts.vazirmatn(fontSize: 12, color: AppColors.slate),
+              badge.title,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.vazirmatn(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ],
         ),

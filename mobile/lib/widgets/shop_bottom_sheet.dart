@@ -84,15 +84,9 @@ class _ShopBottomSheetState extends State<ShopBottomSheet> {
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
       decoration: BoxDecoration(
-        color: AppColors.cloud,
+        color: AppColors.snow,
         borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.18),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        border: Border.all(color: AppColors.line, width: 2),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -138,13 +132,23 @@ class _ShopBottomSheetState extends State<ShopBottomSheet> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.coralSoft,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.mistDeep),
+              border: Border.all(color: AppColors.coral, width: 2),
             ),
             child: Column(
               children: [
-                const Text('❤️❤️❤️❤️❤️', style: TextStyle(fontSize: 22)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    5,
+                    (_) => const Icon(
+                      Icons.favorite_rounded,
+                      color: AppColors.coral,
+                      size: 30,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 10),
                 Text(
                   'ترمیم کامل قلب‌ها',
@@ -211,9 +215,11 @@ class _ShopBottomSheetState extends State<ShopBottomSheet> {
                   ),
                 );
               },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF7C3AED),
-                side: const BorderSide(color: Color(0xFF7C3AED), width: 1.5),
+              style: AppTheme.chunkyStyle(
+                face: AppColors.snow,
+                edge: AppColors.line,
+                border: AppColors.line,
+                foreground: AppColors.grape,
               ),
               child: Text(
                 'ارتقا به Super — قلب بی‌نهایت ♾️',
@@ -248,7 +254,7 @@ class _StatChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.nunito(
               fontWeight: FontWeight.w800,
               fontSize: 15,
             ),

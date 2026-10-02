@@ -4,6 +4,7 @@ import 'package:zaban/config/api_config.dart';
 import 'package:zaban/models/question_model.dart';
 import 'package:zaban/services/media_player.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/chunky_tile.dart';
 
 typedef ExerciseResponseCallback = void Function(Map<String, dynamic> response);
 
@@ -86,9 +87,9 @@ class _MediaStub extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.amberSoft.withValues(alpha: 0.5),
+        color: AppColors.sunSoft,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.amber.withValues(alpha: 0.35)),
+        border: Border.all(color: AppColors.sun, width: 2),
       ),
       child: Row(
         children: [
@@ -97,7 +98,8 @@ class _MediaStub extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.vazirmatn(fontSize: 13, color: AppColors.inkSoft),
+              style:
+                  GoogleFonts.vazirmatn(fontSize: 13, color: AppColors.inkSoft),
             ),
           ),
         ],
@@ -126,8 +128,7 @@ class _ListeningModuleState extends State<ListeningModule> {
   String? _playingKey;
   String? _error;
 
-  String? get _audioUrl =>
-      widget.question.content['audioUrl']?.toString();
+  String? get _audioUrl => widget.question.content['audioUrl']?.toString();
   String? get _slowAudioUrl =>
       widget.question.content['slowAudioUrl']?.toString() ?? _audioUrl;
 
@@ -183,7 +184,12 @@ class _ListeningModuleState extends State<ListeningModule> {
         Row(
           children: [
             Expanded(
-              child: OutlinedButton.icon(
+              child: ElevatedButton.icon(
+                style: AppTheme.chunkyStyle(
+                  face: AppColors.sky,
+                  edge: AppColors.skyDark,
+                  foreground: Colors.white,
+                ),
                 onPressed: _playingKey == 'normal'
                     ? null
                     : () => _play('normal', _audioUrl),
@@ -230,26 +236,14 @@ class _ListeningModuleState extends State<ListeningModule> {
           final selected = _selected == option;
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
+            child: ChunkyTile(
+              selected: selected,
               onTap: () => setState(() => _selected = option),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.amberSoft : Colors.white70,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: selected ? AppColors.amber : AppColors.mistDeep,
-                    width: 1.6,
-                  ),
-                ),
-                child: Text(
-                  option,
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.rtl,
-                  style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
-                ),
+              child: Text(
+                option,
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+                style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
               ),
             ),
           );
@@ -315,26 +309,14 @@ class _OptionsModuleState extends State<OptionsModule> {
           final selected = _selected == option;
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
+            child: ChunkyTile(
+              selected: selected,
               onTap: () => setState(() => _selected = option),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.amberSoft : Colors.white70,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: selected ? AppColors.amber : AppColors.mistDeep,
-                    width: 1.6,
-                  ),
-                ),
-                child: Text(
-                  option,
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.rtl,
-                  style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
-                ),
+              child: Text(
+                option,
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+                style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
               ),
             ),
           );
@@ -472,23 +454,16 @@ class _MatchingModuleState extends State<MatchingModule> {
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
+      child: ChunkyTile(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.tealSoft : Colors.white70,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected ? AppColors.teal : AppColors.mistDeep,
-            ),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w600, fontSize: 13),
-          ),
+        selected: selected,
+        padding: const EdgeInsets.all(12),
+        radius: 12,
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style:
+              GoogleFonts.vazirmatn(fontWeight: FontWeight.w700, fontSize: 13),
         ),
       ),
     );
@@ -545,17 +520,14 @@ class _ClozeModuleState extends State<ClozeModule> {
         const SizedBox(height: 16),
         Text(
           text,
-          style: GoogleFonts.dmSans(fontSize: 18, height: 1.5),
+          style: AppTheme.latin(fontSize: 18, fontWeight: FontWeight.w700)
+              .copyWith(height: 1.5),
         ),
         const SizedBox(height: 20),
         TextField(
           controller: _controller,
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             labelText: 'پاسخ جای خالی',
-            labelStyle: GoogleFonts.vazirmatn(),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-            filled: true,
-            fillColor: Colors.white,
           ),
         ),
         const Spacer(),
@@ -596,11 +568,9 @@ class _OrderBankModuleState extends State<OrderBankModule> {
   @override
   void initState() {
     super.initState();
-    final raw = widget.question.content['bank'] ??
-        widget.question.content['items'];
-    _bank = raw is List
-        ? raw.map((e) => e.toString()).toList()
-        : <String>[];
+    final raw =
+        widget.question.content['bank'] ?? widget.question.content['items'];
+    _bank = raw is List ? raw.map((e) => e.toString()).toList() : <String>[];
   }
 
   @override
@@ -622,20 +592,20 @@ class _OrderBankModuleState extends State<OrderBankModule> {
           constraints: const BoxConstraints(minHeight: 56),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white70,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.mistDeep),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: const BoxDecoration(
+              border: Border.symmetric(
+                horizontal: BorderSide(color: AppColors.line, width: 2),
+              ),
             ),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
               children: _built
                   .map(
-                    (t) => ActionChip(
-                      label: Text(t, style: GoogleFonts.dmSans()),
-                      onPressed: () => setState(() {
+                    (t) => _WordChip(
+                      label: t,
+                      onTap: () => setState(() {
                         _built.remove(t);
                         _bank.add(t);
                       }),
@@ -647,14 +617,14 @@ class _OrderBankModuleState extends State<OrderBankModule> {
         ),
         const SizedBox(height: 16),
         Wrap(
+          alignment: WrapAlignment.center,
           spacing: 8,
           runSpacing: 8,
           children: _bank
               .map(
-                (t) => ActionChip(
-                  label: Text(t, style: GoogleFonts.dmSans()),
-                  backgroundColor: AppColors.tealSoft,
-                  onPressed: () => setState(() {
+                (t) => _WordChip(
+                  label: t,
+                  onTap: () => setState(() {
                     _bank.remove(t);
                     _built.add(t);
                   }),
@@ -666,7 +636,8 @@ class _OrderBankModuleState extends State<OrderBankModule> {
         ElevatedButton(
           onPressed: _built.isEmpty
               ? null
-              : () => widget.onSubmitResponse({'order': List<String>.from(_built)}),
+              : () =>
+                  widget.onSubmitResponse({'order': List<String>.from(_built)}),
           child: Text(
             'ثبت و ادامه',
             style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
@@ -726,19 +697,15 @@ class _TranslationModuleState extends State<TranslationModule> {
         Text(
           source,
           textAlign: TextAlign.center,
-          style: GoogleFonts.fraunces(fontSize: 26, fontWeight: FontWeight.w700),
+          style: AppTheme.latin(fontSize: 28),
         ),
         const SizedBox(height: 20),
         TextField(
           controller: _controller,
           textDirection:
               direction == 'en_to_fa' ? TextDirection.rtl : TextDirection.ltr,
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             labelText: 'ترجمه شما',
-            labelStyle: GoogleFonts.vazirmatn(),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-            filled: true,
-            fillColor: Colors.white,
           ),
         ),
         const Spacer(),
@@ -799,13 +766,13 @@ class _SpeakingModuleState extends State<SpeakingModule> {
           width: double.infinity,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppColors.tealSoft.withValues(alpha: 0.45),
+            color: AppColors.skySoft,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.teal.withValues(alpha: 0.35)),
+            border: Border.all(color: AppColors.skyBorder, width: 2),
           ),
           child: Row(
             children: [
-              const Icon(Icons.mic_rounded, color: AppColors.tealDeep),
+              const Icon(Icons.mic_rounded, color: AppColors.skyDark),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -824,17 +791,13 @@ class _SpeakingModuleState extends State<SpeakingModule> {
         Text(
           target,
           textAlign: TextAlign.center,
-          style: GoogleFonts.fraunces(fontSize: 28, fontWeight: FontWeight.w700),
+          style: AppTheme.latin(fontSize: 28),
         ),
         const SizedBox(height: 20),
         TextField(
           controller: _controller,
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             labelText: 'متن گفته‌شده (جایگزین موقت ضبط)',
-            labelStyle: GoogleFonts.vazirmatn(),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-            filled: true,
-            fillColor: Colors.white,
           ),
         ),
         const Spacer(),
@@ -882,9 +845,9 @@ class UnknownModule extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white70,
+            color: AppColors.snow,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.mistDeep),
+            border: Border.all(color: AppColors.line, width: 2),
           ),
           child: Text(
             'نوع ناشناخته [$type] — بدون کرش رد می‌شود',
@@ -901,6 +864,26 @@ class UnknownModule extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _WordChip extends StatelessWidget {
+  const _WordChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChunkyTile(
+      onTap: onTap,
+      radius: 12,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Text(
+        label,
+        style: AppTheme.latin(fontSize: 16, fontWeight: FontWeight.w800),
+      ),
     );
   }
 }
