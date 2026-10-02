@@ -15,6 +15,7 @@ import 'package:zaban/screens/quiz/quiz_screen.dart';
 import 'package:zaban/screens/study/word_study_screen.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/late_grades_sheet.dart';
 
 class LearningPathScreen extends StatefulWidget {
   const LearningPathScreen({super.key, this.embedded = false});
@@ -54,6 +55,10 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
     _loadPath();
+    // Essay answers that the AI graded after the learner left the lesson.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) showLateGradesIfAny(context);
+    });
   }
 
   @override

@@ -1,7 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { readFile } from 'fs/promises';
+import { execFile } from 'child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
+import JSZip from 'jszip';
 import mammoth from 'mammoth';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { promisify } from 'util';
 import { PDFDocument } from 'pdf-lib';
 import {
   LLM_PROVIDER,
@@ -10,6 +15,9 @@ import {
 } from '../../ai/llm/llm.types';
 import { detectSourceKind } from './source-kind';
 import { EXTRACT_SYSTEM, extractPagesRequest } from './prompts';
+
+const execFileAsync = promisify(execFile);
+const SOFFICE_TIMEOUT_MS = 180_000;
 
 const MARKDOWN_SCHEMA = {
   type: 'object',
@@ -20,6 +28,8 @@ const MARKDOWN_SCHEMA = {
 /** Turns an uploaded file (any supported format) into page-marked Markdown. */
 @Injectable()
 export class SourceExtractorService {
+  private readonly logger = new Logger(SourceExtractorService.name);
+
   constructor(
     @Inject(LLM_PROVIDER) private readonly llm: LlmProvider,
     private readonly config: ConfigService,
@@ -37,8 +47,13 @@ export class SourceExtractorService {
       case 'text':
         return data.toString('utf8');
       case 'docx': {
+        // mammoth drops Word equations (OMML). Documents that contain them
+        // go through LibreOffice → PDF so Gemini transcribes math as LaTeX.
+        if (await docxHasEquations(data)) {
+          const pdf = await this.docxToPdf(data);
+          if (pdf) return this.extractPdf(pdf, onUsage);
+        }
         // convertToMarkdown is missing from mammoth's typings but supported.
-        // Word equation objects are not converted; export math books to PDF.
         const converter = mammoth as unknown as {
           convertToMarkdown(input: {
             buffer: Buffer;
@@ -51,6 +66,30 @@ export class SourceExtractorService {
         return this.transcribe(data, detected.mimeType, 1, 1, onUsage);
       case 'pdf':
         return this.extractPdf(data, onUsage);
+    }
+  }
+
+  /** Converts a .docx with LibreOffice; null when it is unavailable. */
+  private async docxToPdf(data: Buffer): Promise<Buffer | null> {
+    const bin = this.config.get<string>('CONTENT_SOFFICE_BIN', 'soffice');
+    const dir = await mkdtemp(join(tmpdir(), 'zaban-docx-'));
+    try {
+      const input = join(dir, 'source.docx');
+      await writeFile(input, data);
+      await execFileAsync(
+        bin,
+        ['--headless', '--convert-to', 'pdf', '--outdir', dir, input],
+        // A private HOME keeps parallel runs from sharing a locked profile.
+        { timeout: SOFFICE_TIMEOUT_MS, env: { ...process.env, HOME: dir } },
+      );
+      return await readFile(join(dir, 'source.pdf'));
+    } catch (err) {
+      this.logger.warn(
+        `LibreOffice conversion failed (${bin}); Word equations will be dropped: ${String(err)}`,
+      );
+      return null;
+    } finally {
+      await rm(dir, { recursive: true, force: true });
     }
   }
 
@@ -111,5 +150,16 @@ export class SourceExtractorService {
     return /<!--\s*page/i.test(markdown)
       ? markdown
       : `<!-- page ${firstPage} -->\n\n${markdown}`;
+  }
+}
+
+/** True when the document body contains Word equation objects (OMML). */
+export async function docxHasEquations(data: Buffer): Promise<boolean> {
+  try {
+    const zip = await JSZip.loadAsync(data);
+    const xml = await zip.file('word/document.xml')?.async('string');
+    return !!xml && /<m:oMath[\s>]/.test(xml);
+  } catch {
+    return false;
   }
 }

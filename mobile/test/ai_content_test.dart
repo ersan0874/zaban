@@ -101,7 +101,9 @@ void main() {
           unitTitle: 'درس',
           sessionId: 's1',
           notes: const ['نکته اول'],
-          questions: [_q('short_answer', {'question': 'پایتخت ایران؟'})],
+          questions: [
+            _q('short_answer', {'question': 'پایتخت ایران؟'})
+          ],
         ),
       ),
     );

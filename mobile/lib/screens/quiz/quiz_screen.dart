@@ -6,6 +6,7 @@ import 'package:zaban/screens/quiz/modules/exercise_modules.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
 import 'package:zaban/widgets/math_text.dart';
+import 'package:zaban/widgets/note_content.dart';
 
 /// Quiz fed by a server lesson session; grading happens on submit.
 class QuizScreen extends StatefulWidget {
@@ -543,7 +544,7 @@ class _NotesList extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: MathText(
+              child: NoteContent(
                 notes[i],
                 style: GoogleFonts.vazirmatn(
                   fontSize: 15,

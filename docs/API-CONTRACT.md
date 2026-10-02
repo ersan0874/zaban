@@ -31,6 +31,8 @@
 | POST | `/api/lessons/:lessonId/sessions` | Bearer | شروع نشست موقت (بدون answer؛ ممکن است تمرین مرور تزریق شود) |
 | GET | `/api/sessions/:sessionId` | Bearer | بازیابی نشست |
 | POST | `/api/sessions/:sessionId/submit` | Bearer | ارسال پاسخ‌ها و نمره سرور |
+| GET | `/api/me/late-grades` | Bearer | پاسخ‌های تشریحی که بعد از پایان درس نمره گرفتند (حداکثر ۲۰): `{attemptId, exerciseId, lessonTitle, question, isCorrect, score, feedback, gradedAt}[]` |
+| POST | `/api/me/late-grades/seen` | Bearer | `{ attemptIds?: uuid[] }` (خالی = همه) → `{ marked }` |
 | GET | `/api/economy/wallet` | Bearer | موجودی جم |
 | GET | `/api/economy/shop` | Bearer | کاتالوگ فروشگاه |
 | POST | `/api/economy/shop/:itemKey/buy` | Bearer | خرید با جم |
