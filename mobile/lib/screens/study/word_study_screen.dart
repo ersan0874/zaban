@@ -54,11 +54,7 @@ class _WordStudyScreenState extends State<WordStudyScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF7FBFC), AppColors.mist, Color(0xFFE8F4F2)],
-          ),
+          color: AppColors.snow,
         ),
         child: SafeArea(
           child: Column(
@@ -110,7 +106,8 @@ class _WordStudyScreenState extends State<WordStudyScreen> {
                 child: PageView.builder(
                   controller: _pageController,
                   itemCount: total,
-                  onPageChanged: (index) => setState(() => _currentPage = index),
+                  onPageChanged: (index) =>
+                      setState(() => _currentPage = index),
                   itemBuilder: (context, index) {
                     return _WordPage(word: widget.words[index]);
                   },
@@ -130,7 +127,8 @@ class _WordStudyScreenState extends State<WordStudyScreen> {
                                 ),
                         child: Text(
                           'قبلی',
-                          style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
+                          style: GoogleFonts.vazirmatn(
+                              fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
@@ -145,7 +143,8 @@ class _WordStudyScreenState extends State<WordStudyScreen> {
                                 ),
                         child: Text(
                           _currentPage >= total - 1 ? 'پایان' : 'بعدی',
-                          style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
+                          style: GoogleFonts.vazirmatn(
+                              fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),

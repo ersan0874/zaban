@@ -41,34 +41,43 @@ class _HomeShellState extends State<HomeShell> {
           index: _index,
           children: pages,
         ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _index,
-          onDestinationSelected: (i) => setState(() => _index = i),
-          backgroundColor: Colors.white,
-          indicatorColor: AppColors.tealSoft,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.route_outlined),
-              selectedIcon: Icon(Icons.route_rounded),
-              label: 'مسیر',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.emoji_events_outlined),
-              selectedIcon: Icon(Icons.emoji_events_rounded),
-              label: 'باشگاه',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.people_outline_rounded),
-              selectedIcon: Icon(Icons.people_rounded),
-              label: 'دوستان',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded),
-              label: 'من',
-            ),
-          ],
+        bottomNavigationBar: DecoratedBox(
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: AppColors.line, width: 2)),
+          ),
+          child: NavigationBar(
+            selectedIndex: _index,
+            onDestinationSelected: (i) => setState(() => _index = i),
+            height: 68,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined, color: AppColors.locked),
+                selectedIcon: Icon(Icons.home_rounded, color: AppColors.flame),
+                label: 'مسیر',
+              ),
+              NavigationDestination(
+                icon:
+                    Icon(Icons.emoji_events_outlined, color: AppColors.locked),
+                selectedIcon:
+                    Icon(Icons.emoji_events_rounded, color: AppColors.amber),
+                label: 'باشگاه',
+              ),
+              NavigationDestination(
+                icon:
+                    Icon(Icons.people_outline_rounded, color: AppColors.locked),
+                selectedIcon: Icon(Icons.people_rounded, color: AppColors.sky),
+                label: 'دوستان',
+              ),
+              NavigationDestination(
+                icon:
+                    Icon(Icons.person_outline_rounded, color: AppColors.locked),
+                selectedIcon:
+                    Icon(Icons.person_rounded, color: AppColors.grape),
+                label: 'من',
+              ),
+            ],
+          ),
         ),
       ),
     );

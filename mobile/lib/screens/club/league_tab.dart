@@ -103,11 +103,7 @@ class _LeagueTabState extends State<LeagueTab> {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: [Color(0xFF0F766E), Color(0xFF0D9488)],
-              ),
+              color: AppColors.leaf,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(

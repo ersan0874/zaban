@@ -125,9 +125,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF0F766E), Color(0xFF0D9488)],
-                        ),
+                        color: AppColors.leaf,
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: Row(
@@ -155,8 +153,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  const SuperSubscriptionScreen(),
+                              builder: (_) => const SuperSubscriptionScreen(),
                             ),
                           );
                         },

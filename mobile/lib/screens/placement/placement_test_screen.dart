@@ -140,11 +140,7 @@ class _PlacementTestScreenState extends State<PlacementTestScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF7FBFC), AppColors.mist, Color(0xFFE5F0F2)],
-          ),
+          color: AppColors.snow,
         ),
         child: SafeArea(
           child: _loading
@@ -279,7 +275,8 @@ class _PlacementTestScreenState extends State<PlacementTestScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const CircularProgressIndicator(color: AppColors.tealDeep),
+                      const CircularProgressIndicator(
+                          color: AppColors.tealDeep),
                       const SizedBox(height: 16),
                       Text(
                         'در حال محاسبه سطح...',

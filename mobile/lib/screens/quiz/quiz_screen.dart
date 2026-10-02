@@ -101,21 +101,13 @@ class _QuizScreenState extends State<QuizScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF7FBFC), AppColors.mist, Color(0xFFE5F0F2)],
-          ),
-        ),
-        child: SafeArea(
-          child: _submitting
-              ? const Center(child: CircularProgressIndicator())
-              : _finished
-                  ? _buildResult()
-                  : _buildQuiz(),
-        ),
+      backgroundColor: AppColors.snow,
+      body: SafeArea(
+        child: _submitting
+            ? const Center(child: CircularProgressIndicator())
+            : _finished
+                ? _buildResult()
+                : _buildQuiz(),
       ),
     );
   }
@@ -134,59 +126,63 @@ class _QuizScreenState extends State<QuizScreen>
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 4, 16, 8),
+          padding: const EdgeInsets.fromLTRB(8, 8, 16, 4),
           child: Row(
             children: [
               IconButton(
+                tooltip: 'خروج',
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded),
-                color: AppColors.inkSoft,
+                icon: const Icon(Icons.close_rounded, size: 28),
+                color: AppColors.locked,
               ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _ChunkyProgressBar(value: (_index + 1) / total),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '${_index + 1}/$total',
+                style: AppTheme.latin(fontSize: 15, color: AppColors.slate),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+          child: Row(
+            children: [
+              if (_current.isReview) ...[
+                const Icon(
+                  Icons.replay_circle_filled_rounded,
+                  color: AppColors.grape,
+                  size: 18,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'مرور هوشمند',
+                  style: GoogleFonts.vazirmatn(
+                    color: AppColors.grape,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
               Expanded(
                 child: Text(
                   widget.unitTitle,
-                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.vazirmatn(
-                    fontSize: 16,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
+                    color: AppColors.slate,
                   ),
-                ),
-              ),
-              Text(
-                '${_index + 1}/$total',
-                style: GoogleFonts.dmSans(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.tealDeep,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: LinearProgressIndicator(
-              value: (_index + 1) / total,
-              minHeight: 6,
-              backgroundColor: AppColors.mistDeep,
-              color: AppColors.amber,
-            ),
-          ),
-        ),
-        if (_current.isReview)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'مرور هوشمند',
-              style: GoogleFonts.vazirmatn(
-                color: AppColors.amber,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
-            ),
-          ),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.all(12),
@@ -223,14 +219,8 @@ class _QuizScreenState extends State<QuizScreen>
                       height: 92,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.teal.withValues(alpha: 0.92),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.teal.withValues(alpha: 0.35),
-                            blurRadius: 18,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+                        color: AppColors.leaf,
+                        border: Border.all(color: AppColors.leafSoft, width: 6),
                       ),
                       child: const Icon(
                         Icons.check_rounded,
@@ -253,92 +243,222 @@ class _QuizScreenState extends State<QuizScreen>
     final percent = _result?.scorePercent ?? 0;
 
     final passed = percent >= 70;
+    final accent = passed ? AppColors.sunDark : AppColors.flame;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.6, end: 1),
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.elasticOut,
-              builder: (context, scale, child) =>
-                  Transform.scale(scale: scale, child: child),
-              child: Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: passed
-                        ? const [AppColors.success, Color(0xFF047857)]
-                        : const [AppColors.amber, Color(0xFFB45309)],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 24),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.6, end: 1),
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.elasticOut,
+                    builder: (context, scale, child) =>
+                        Transform.scale(scale: scale, child: child),
+                    child: Container(
+                      width: 148,
+                      height: 148,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: passed ? AppColors.sunSoft : AppColors.leafSoft,
+                      ),
+                      child: Icon(
+                        passed
+                            ? Icons.emoji_events_rounded
+                            : Icons.fitness_center_rounded,
+                        color: passed ? AppColors.sun : AppColors.leaf,
+                        size: 92,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    passed ? 'درس تمام شد!' : 'خوب تمرین کردی!',
+                    style: GoogleFonts.vazirmatn(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      color: accent,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    passed
+                        ? '$correct از $total پاسخ درست بود'
+                        : '$correct از $total درست؛ یک بار دیگر امتحان کن',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.vazirmatn(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.slate,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ResultTile(
+                          label: 'پاسخ درست',
+                          value: '$correct/$total',
+                          icon: Icons.check_circle_rounded,
+                          color: AppColors.leaf,
+                          dark: AppColors.leafDark,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ResultTile(
+                          label: 'دقت',
+                          value: '$percent%',
+                          icon: Icons.track_changes_rounded,
+                          color: AppColors.sun,
+                          dark: AppColors.sunDark,
+                        ),
+                      ),
+                      if (_result?.energyBalance != null) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _ResultTile(
+                            label: 'انرژی',
+                            value: '${_result!.energyBalance}',
+                            icon: Icons.bolt_rounded,
+                            color: AppColors.sky,
+                            dark: AppColors.skyDark,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if ((_result?.comboRewards.isNotEmpty ?? false)) ...[
+                    const SizedBox(height: 16),
+                    _ComboBurst(
+                      totalEnergy: _result!.comboRewards
+                          .fold<int>(0, (s, r) => s + r.energyAwarded),
+                      count: _result!.comboRewards.length,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('ادامه'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChunkyProgressBar extends StatelessWidget {
+  const _ChunkyProgressBar({required this.value});
+
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 16,
+      decoration: BoxDecoration(
+        color: AppColors.line,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(end: value.clamp(0.0, 1.0)),
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+        builder: (context, v, _) => FractionallySizedBox(
+          alignment: AlignmentDirectional.centerStart,
+          widthFactor: v,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.leaf,
+              borderRadius: BorderRadius.circular(99),
+            ),
+            alignment: Alignment.topCenter,
+            padding: const EdgeInsets.fromLTRB(8, 3, 8, 0),
+            child: Container(
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultTile extends StatelessWidget {
+  const _ResultTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.dark,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final Color dark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(2),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              label,
+              style: GoogleFonts.vazirmatn(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.snow,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 4),
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Text(
+                    value,
+                    style: AppTheme.latin(fontSize: 18, color: dark),
                   ),
                 ),
-                child: Icon(
-                  passed ? Icons.check_rounded : Icons.refresh_rounded,
-                  color: Colors.white,
-                  size: 44,
-                ),
-              ),
+              ],
             ),
-            const SizedBox(height: 24),
-            Text(
-              'آزمون تمام شد',
-              style: GoogleFonts.vazirmatn(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              '$correct از $total پاسخ درست ($percent٪)',
-              style: GoogleFonts.vazirmatn(
-                fontSize: 16,
-                color: AppColors.slate,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'نمره توسط سرور محاسبه شد',
-              style: GoogleFonts.vazirmatn(
-                fontSize: 13,
-                color: AppColors.slate,
-              ),
-            ),
-            if ((_result?.comboRewards.isNotEmpty ?? false)) ...[
-              const SizedBox(height: 20),
-              _ComboBurst(
-                totalEnergy: _result!.comboRewards
-                    .fold<int>(0, (s, r) => s + r.energyAwarded),
-                count: _result!.comboRewards.length,
-              ),
-            ],
-            if (_result?.energyBalance != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                'انرژی باقی‌مانده: ${_result!.energyBalance}',
-                style: GoogleFonts.vazirmatn(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.tealDeep,
-                ),
-              ),
-            ],
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'بازگشت به مسیر',
-                  style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -375,9 +495,9 @@ class _ComboBurstState extends State<_ComboBurst>
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
         decoration: BoxDecoration(
-          color: AppColors.amberSoft,
+          color: AppColors.sunSoft,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.amber.withValues(alpha: 0.45)),
+          border: Border.all(color: AppColors.sun, width: 2),
         ),
         child: Column(
           children: [
@@ -391,10 +511,10 @@ class _ComboBurstState extends State<_ComboBurst>
             ),
             const SizedBox(height: 4),
             Text(
-              '${widget.count} پاداش سرور · +${widget.totalEnergy} انرژی',
+              '${widget.count} پاداش · +${widget.totalEnergy} انرژی',
               style: GoogleFonts.vazirmatn(
-                fontWeight: FontWeight.w700,
-                color: AppColors.amber,
+                fontWeight: FontWeight.w800,
+                color: AppColors.sunDark,
               ),
             ),
           ],

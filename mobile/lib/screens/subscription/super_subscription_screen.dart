@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/models/subscription_model.dart';
 import 'package:zaban/services/subscription_service.dart';
 import 'package:zaban/services/user_stats_service.dart';
+import 'package:zaban/theme/app_theme.dart';
 
 class SuperSubscriptionScreen extends StatefulWidget {
   const SuperSubscriptionScreen({super.key});
@@ -66,9 +67,10 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, 'mock'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFBBF24),
-                foregroundColor: const Color(0xFF1A0B2E),
+              style: AppTheme.chunkyStyle(
+                face: AppColors.sun,
+                edge: AppColors.sunDark,
+                foreground: AppColors.ink,
               ),
               child: Text(
                 'شبیه‌سازی پرداخت',
@@ -153,7 +155,8 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                      icon: const Icon(Icons.close_rounded,
+                          color: Colors.white70),
                     ),
                     const Spacer(),
                     ListenableBuilder(
@@ -166,7 +169,8 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFBBF24).withValues(alpha: 0.2),
+                            color:
+                                const Color(0xFFFBBF24).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(99),
                             border: Border.all(color: const Color(0xFFFBBF24)),
                           ),
@@ -203,7 +207,8 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
                             ],
                           ),
                           border: Border.all(
-                            color: const Color(0xFFFBBF24).withValues(alpha: 0.45),
+                            color:
+                                const Color(0xFFFBBF24).withValues(alpha: 0.45),
                           ),
                         ),
                         child: Column(
@@ -271,16 +276,10 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: _loading ? null : _upgrade,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFBBF24),
-                            foregroundColor: const Color(0xFF1A0B2E),
-                            disabledBackgroundColor:
-                                const Color(0xFFFBBF24).withValues(alpha: 0.5),
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            elevation: 0,
+                          style: AppTheme.chunkyStyle(
+                            face: AppColors.sun,
+                            edge: AppColors.sunDark,
+                            foreground: AppColors.ink,
                           ),
                           child: _loading
                               ? const SizedBox(
@@ -387,15 +386,15 @@ class _PlanCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: selected
-                        ? const Color(0xFFFBBF24)
-                        : Colors.white54,
+                    color: selected ? const Color(0xFFFBBF24) : Colors.white54,
                     width: 2,
                   ),
-                  color: selected ? const Color(0xFFFBBF24) : Colors.transparent,
+                  color:
+                      selected ? const Color(0xFFFBBF24) : Colors.transparent,
                 ),
                 child: selected
-                    ? const Icon(Icons.check, size: 14, color: Color(0xFF1A0B2E))
+                    ? const Icon(Icons.check,
+                        size: 14, color: Color(0xFF1A0B2E))
                     : null,
               ),
               const SizedBox(width: 14),

@@ -206,14 +206,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               TextField(
                 controller: _name,
                 textDirection: TextDirection.rtl,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'نام نمایشی',
-                  labelStyle: GoogleFonts.vazirmatn(),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -221,14 +215,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 controller: _bio,
                 textDirection: TextDirection.rtl,
                 maxLines: 3,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'درباره من',
-                  labelStyle: GoogleFonts.vazirmatn(),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
                 ),
               ),
               const SizedBox(height: 16),

@@ -61,3 +61,8 @@
 - تاریخ: 2026-09-12
 - تصمیم: `Purchase` + `EnergySubscription`؛ verify سمت سرور؛ `TEST.*` برای dev؛ unlimited sub → skip energy burn.
 - دلیل: ضدتقلب رسید و monetization بدون دور زدن اقتصاد انرژی.
+
+## ADR-015 — سیستم طراحی «چانکی» (الهام از دولینگو)
+- تاریخ: 2026-10-02
+- تصمیم: رنگ‌ها و دکمه‌ها فقط از `mobile/lib/theme/app_theme.dart` (`AppColors`، `AppTheme.chunkyStyle`) و `widgets/chunky_tile.dart`؛ هر رنگ یک معنی ثابت دارد؛ زمینه سفید، خط‌های ۲px، بدون گرادیان و سایه محو. نام‌های قدیمی `AppColors` (teal/amber/mist…) به رنگ‌های جدید نگاشت شده‌اند تا صفحه‌های قدیمی خودکار هم‌رنگ شوند.
+- دلیل: ظاهر یکدست و شاد؛ یک جا برای تغییر رنگ‌ها.

@@ -121,9 +121,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
-                              ),
+                              color: AppColors.leaf,
                               borderRadius: BorderRadius.circular(18),
                             ),
                             child: Column(
@@ -297,7 +295,9 @@ class _ProgressTile extends StatelessWidget {
         color: highlight ? AppColors.amberSoft : Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: highlight ? AppColors.amber.withValues(alpha: 0.4) : AppColors.mistDeep,
+          color: highlight
+              ? AppColors.amber.withValues(alpha: 0.4)
+              : AppColors.mistDeep,
         ),
       ),
       child: Row(

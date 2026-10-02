@@ -211,9 +211,11 @@ class _ShopBottomSheetState extends State<ShopBottomSheet> {
                   ),
                 );
               },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF7C3AED),
-                side: const BorderSide(color: Color(0xFF7C3AED), width: 1.5),
+              style: AppTheme.chunkyStyle(
+                face: AppColors.snow,
+                edge: AppColors.line,
+                border: AppColors.line,
+                foreground: AppColors.grape,
               ),
               child: Text(
                 'ارتقا به Super — قلب بی‌نهایت ♾️',
