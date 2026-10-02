@@ -17,6 +17,10 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
+  /// Bumped each time a tab is opened so Club / Friends / Me reload their
+  /// data instead of showing what they fetched when the app started.
+  final List<int> _visits = [0, 0, 0, 0];
+
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
@@ -39,7 +43,13 @@ class _HomeShellState extends State<HomeShell> {
       child: Scaffold(
         body: IndexedStack(
           index: _index,
-          children: pages,
+          children: [
+            for (var i = 0; i < pages.length; i++)
+              KeyedSubtree(
+                key: ValueKey('tab-$i-${_visits[i]}'),
+                child: pages[i],
+              ),
+          ],
         ),
         bottomNavigationBar: DecoratedBox(
           decoration: BoxDecoration(
@@ -47,7 +57,11 @@ class _HomeShellState extends State<HomeShell> {
           ),
           child: NavigationBar(
             selectedIndex: _index,
-            onDestinationSelected: (i) => setState(() => _index = i),
+            onDestinationSelected: (i) => setState(() {
+              // The path keeps its scroll position; other tabs refresh.
+              if (i != 0 && i != _index) _visits[i]++;
+              _index = i;
+            }),
             height: 68,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             destinations: [

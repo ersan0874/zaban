@@ -76,7 +76,10 @@ export class AdminService {
 
     const avgRow = await this.sessionRepository
       .createQueryBuilder('s')
-      .select('AVG(CASE WHEN s.totalCount > 0 THEN s.correctCount::float / s.totalCount ELSE 0 END)', 'avgScore')
+      .select(
+        'AVG(CASE WHEN s."totalCount" > 0 THEN s."correctCount"::float / s."totalCount" ELSE 0 END)',
+        'avgScore',
+      )
       .where('s.status = :status', { status: 'completed' })
       .getRawOne<{ avgScore: string | null }>();
 

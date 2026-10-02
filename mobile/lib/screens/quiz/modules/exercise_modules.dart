@@ -263,7 +263,6 @@ class _ListeningModuleState extends State<ListeningModule> {
               child: MathText(
                 option,
                 textAlign: TextAlign.right,
-                textDirection: TextDirection.rtl,
                 style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
               ),
             ),
@@ -309,8 +308,16 @@ class _OptionsModuleState extends State<OptionsModule> {
     return raw.map((e) => e.toString()).toList();
   }
 
+  /// AI-generated questions keep the instruction in `prompt` and the actual
+  /// question in `content.stem`.
+  String get _stem {
+    final raw = widget.question.content['stem'];
+    return raw is String ? raw.trim() : '';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final stem = _stem;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -318,12 +325,26 @@ class _OptionsModuleState extends State<OptionsModule> {
           widget.question.prompt,
           textAlign: TextAlign.right,
           textDirection: TextDirection.rtl,
-          style: GoogleFonts.vazirmatn(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            height: 1.4,
-          ),
+          style: stem.isEmpty
+              ? GoogleFonts.vazirmatn(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  height: 1.4,
+                )
+              : GoogleFonts.vazirmatn(fontSize: 14, color: AppColors.slate),
         ),
+        if (stem.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          MathText(
+            stem,
+            textAlign: TextAlign.right,
+            style: GoogleFonts.vazirmatn(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              height: 1.4,
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         if (widget.leading != null) widget.leading!,
         ..._options.map((option) {
@@ -336,7 +357,6 @@ class _OptionsModuleState extends State<OptionsModule> {
               child: MathText(
                 option,
                 textAlign: TextAlign.right,
-                textDirection: TextDirection.rtl,
                 style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
               ),
             ),
@@ -541,12 +561,15 @@ class _ClozeModuleState extends State<ClozeModule> {
         const SizedBox(height: 16),
         Text(
           text,
+          textAlign: TextAlign.right,
+          textDirection: detectTextDirection(text),
           style: AppTheme.latin(fontSize: 18, fontWeight: FontWeight.w700)
               .copyWith(height: 1.5),
         ),
         const SizedBox(height: 20),
         TextField(
           controller: _controller,
+          textDirection: detectTextDirection(text),
           decoration: const InputDecoration(
             labelText: 'پاسخ جای خالی',
           ),
@@ -718,6 +741,7 @@ class _TranslationModuleState extends State<TranslationModule> {
         Text(
           source,
           textAlign: TextAlign.center,
+          textDirection: detectTextDirection(source),
           style: AppTheme.latin(fontSize: 28),
         ),
         const SizedBox(height: 20),

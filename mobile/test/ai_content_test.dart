@@ -78,6 +78,44 @@ void main() {
     expect(sent, {'value': false});
   });
 
+  testWidgets('multiple choice shows the AI question stem', (tester) async {
+    Map<String, dynamic>? sent;
+    await tester.pumpWidget(
+      _wrap(
+        ExerciseModuleRouter(
+          question: _q('multiple_choice', {
+            'stem': 'معادل انگلیسی «شهرت» کدام است؟',
+            'options': ['Renown', 'Persist'],
+          }),
+          onSubmitResponse: (r) => sent = r,
+        ),
+      ),
+    );
+    expect(find.text('معادل انگلیسی «شهرت» کدام است؟'), findsOneWidget);
+    await tester.tap(find.text('Renown'));
+    await tester.pump();
+    await tester.tap(find.text('ثبت و ادامه'));
+    expect(sent, {'correctOption': 'Renown'});
+  });
+
+  testWidgets('English cloze text is laid out left to right', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        ExerciseModuleRouter(
+          question: _q('cloze_typing', {
+            'text': 'There are four _____ types.',
+            'blanks': [
+              {'id': 'blank_1', 'position': 0},
+            ],
+          }),
+          onSubmitResponse: (_) {},
+        ),
+      ),
+    );
+    final text = tester.widget<Text>(find.text('There are four _____ types.'));
+    expect(text.textDirection, TextDirection.ltr);
+  });
+
   testWidgets('essay module submits text', (tester) async {
     Map<String, dynamic>? sent;
     await tester.pumpWidget(
