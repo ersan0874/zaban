@@ -9,12 +9,21 @@ class EnergySnapshot {
     required this.lessonCost,
     this.nextRegenAt,
     this.millisUntilNextRegen,
+    this.comboStreak = 0,
+    this.unlimited = false,
   });
 
   final int balance;
   final int cap;
   final int regenIntervalMinutes;
+
+  /// Energy burned per page passed.
   final int lessonCost;
+  final int comboStreak;
+  final bool unlimited;
+
+  /// True when the next page cannot be paid for.
+  bool get isEmpty => !unlimited && balance < lessonCost;
   final DateTime? nextRegenAt;
   final int? millisUntilNextRegen;
 
@@ -23,7 +32,9 @@ class EnergySnapshot {
       balance: json['balance'] as int? ?? 0,
       cap: json['cap'] as int? ?? 25,
       regenIntervalMinutes: json['regenIntervalMinutes'] as int? ?? 5,
-      lessonCost: json['lessonCost'] as int? ?? 1,
+      lessonCost: json['stepCost'] as int? ?? json['lessonCost'] as int? ?? 1,
+      comboStreak: json['comboStreak'] as int? ?? 0,
+      unlimited: json['unlimited'] as bool? ?? false,
       nextRegenAt: json['nextRegenAt'] != null
           ? DateTime.tryParse(json['nextRegenAt'] as String)
           : null,

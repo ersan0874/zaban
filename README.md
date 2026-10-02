@@ -21,7 +21,7 @@
 ## اجرای سریع فعلی
 
 ```bash
-# API
+# API (needs Postgres + Redis; set GEMINI_API_KEY in .env for AI content)
 cp .env.example .env
 npm install
 npm run start:dev
@@ -34,7 +34,7 @@ cd mobile && flutter pub get && flutter run
 cd admin && cp .env.local.example .env.local && npm install && npm run dev
 # http://localhost:3001 — login: admin@zaban.local / Admin1234!
 
-# Full stack (Docker)
+# Full stack (Docker) — GEMINI_API_KEY is read from your shell/.env
 docker compose up --build
 # nginx: http://localhost:8080/admin/  API: http://localhost:8080/api/
 ```

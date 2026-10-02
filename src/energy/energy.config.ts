@@ -13,8 +13,14 @@ export class EnergyConfig {
     return Number(this.config.get('ENERGY_REGEN_MINUTES', 5)) * 60_000;
   }
 
-  get lessonCost(): number {
-    return Number(this.config.get('ENERGY_LESSON_COST', 1));
+  /** Energy burned for every page passed (question or lesson note). */
+  get stepCost(): number {
+    return Number(
+      this.config.get(
+        'ENERGY_STEP_COST',
+        this.config.get('ENERGY_LESSON_COST', 1),
+      ),
+    );
   }
 
   get comboLength(): number {
@@ -26,6 +32,15 @@ export class EnergyConfig {
   }
 
   get comboRewardMax(): number {
-    return Number(this.config.get('ENERGY_COMBO_REWARD_MAX', 7));
+    return Number(this.config.get('ENERGY_COMBO_REWARD_MAX', 3));
+  }
+
+  /** How much the min / max reward grows per extra combo tier. */
+  get comboRewardMinStep(): number {
+    return Number(this.config.get('ENERGY_COMBO_REWARD_MIN_STEP', 1));
+  }
+
+  get comboRewardMaxStep(): number {
+    return Number(this.config.get('ENERGY_COMBO_REWARD_MAX_STEP', 2));
   }
 }

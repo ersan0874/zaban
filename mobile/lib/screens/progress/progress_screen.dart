@@ -5,6 +5,7 @@ import 'package:zaban/repositories/mastery_repository.dart';
 import 'package:zaban/repositories/progress_repository.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/zaban_ui.dart';
 
 /// Shows skill scores + due SRS review queue from the server.
 class ProgressScreen extends StatefulWidget {
@@ -72,12 +73,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.mist,
         appBar: AppBar(
-          title: Text(
-            'پیشرفت و مرور',
-            style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
-          ),
+          title: const Text('پیشرفت و مرور'),
           actions: [
             IconButton(
               onPressed: _loading ? null : _load,
@@ -88,28 +85,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _error!,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.vazirmatn(),
-                          ),
-                          const SizedBox(height: 12),
-                          FilledButton(
-                            onPressed: _load,
-                            child: Text(
-                              'تلاش دوباره',
-                              style: GoogleFonts.vazirmatn(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                ? ZMessage(
+                    icon: Icons.insights_rounded,
+                    text: _error!,
+                    actionLabel: 'تلاش دوباره',
+                    onAction: _load,
                   )
                 : RefreshIndicator(
                     onRefresh: _load,
@@ -117,45 +97,29 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                       children: [
                         if (_masteryScore != null) ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
+                          ZBanner(
+                            title: 'تسلط دوره ${_masteryScore!.round()}%',
+                            subtitle: 'هر چه بیشتر مرور کنی، بالاتر می‌رود',
+                            color: AppColors.sky,
+                            edge: AppColors.skyDark,
+                            icon: Icons.insights_rounded,
+                            child: Container(
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(99),
                               ),
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'تسلط دوره',
-                                  style: GoogleFonts.vazirmatn(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  '${_masteryScore!.round()}٪',
-                                  style: GoogleFonts.vazirmatn(
+                              child: FractionallySizedBox(
+                                alignment: AlignmentDirectional.centerStart,
+                                widthFactor:
+                                    (_masteryScore! / 100).clamp(0.0, 1.0),
+                                child: Container(
+                                  decoration: BoxDecoration(
                                     color: Colors.white,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w800,
+                                    borderRadius: BorderRadius.circular(99),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(999),
-                                  child: LinearProgressIndicator(
-                                    value: (_masteryScore! / 100).clamp(0, 1),
-                                    minHeight: 8,
-                                    backgroundColor:
-                                        Colors.white.withValues(alpha: 0.25),
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -165,24 +129,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           due: _summary?.dueCount ?? 0,
                           avg: _summary?.averageSkillScore ?? 0,
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'آیتم‌های سررسید در درس بعدی به‌صورت مرور تزریق می‌شوند.',
-                          style: GoogleFonts.vazirmatn(
-                            color: AppColors.slate,
-                            fontSize: 13,
+                        const ZSectionTitle('وقت مرور است'),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Text(
+                            'این واژه‌ها در درس بعدی برای مرور می‌آیند.',
+                            style: GoogleFonts.vazirmatn(
+                              color: AppColors.slate,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'صف مرور سررسید',
-                          style: GoogleFonts.vazirmatn(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
                         if ((_reviews?.items ?? []).isEmpty)
                           Text(
                             'الان چیزی برای مرور فوری نیست. بعد از غلط‌ها اینجا پر می‌شود.',
@@ -195,16 +152,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                             (item) =>
                                 _ProgressTile(item: item, highlight: true),
                           ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'همه مهارت‌ها',
-                          style: GoogleFonts.vazirmatn(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
+                        const ZSectionTitle('همه مهارت‌ها'),
                         if ((_summary?.items ?? []).isEmpty)
                           Text(
                             'هنوز تمرینی ثبت نشده. یک آزمون بده تا مهارت‌ها اینجا بیایند.',
@@ -237,46 +185,34 @@ class _StatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget chip(String label, String value, Color color) {
-      return Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.mistDeep),
-          ),
-          child: Column(
-            children: [
-              Text(
-                value,
-                style: GoogleFonts.vazirmatn(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: GoogleFonts.vazirmatn(
-                  fontSize: 12,
-                  color: AppColors.slate,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Row(
       children: [
-        chip('پیگیری', '$tracked', AppColors.tealDeep),
+        Expanded(
+          child: ZStatTile(
+            icon: Icons.menu_book_rounded,
+            color: AppColors.leaf,
+            value: '$tracked',
+            label: 'واژه',
+          ),
+        ),
         const SizedBox(width: 8),
-        chip('سررسید', '$due', AppColors.amber),
+        Expanded(
+          child: ZStatTile(
+            icon: Icons.replay_rounded,
+            color: AppColors.flame,
+            value: '$due',
+            label: 'مرور',
+          ),
+        ),
         const SizedBox(width: 8),
-        chip('میانگین', '$avg', AppColors.ink),
+        Expanded(
+          child: ZStatTile(
+            icon: Icons.star_rounded,
+            color: AppColors.sun,
+            value: '$avg',
+            label: 'میانگین',
+          ),
+        ),
       ],
     );
   }
@@ -290,18 +226,39 @@ class _ProgressTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final color = item.skillScore >= 70
+        ? AppColors.leaf
+        : item.skillScore >= 40
+            ? AppColors.sun
+            : AppColors.coral;
+    return ZCard(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: highlight ? AppColors.amberSoft : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: highlight ? AppColors.amber.withValues(alpha: 0.4) : AppColors.mistDeep,
-        ),
-      ),
+      color: highlight ? AppColors.sunSoft : AppColors.snow,
+      borderColor: highlight ? AppColors.sun : AppColors.line,
       child: Row(
         children: [
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: (item.skillScore / 100).clamp(0.0, 1.0),
+                  strokeWidth: 5,
+                  color: color,
+                  backgroundColor: AppColors.line,
+                  strokeCap: StrokeCap.round,
+                ),
+                Text(
+                  '${item.skillScore}',
+                  style: AppTheme.latin(fontSize: 14, color: AppColors.ink),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,12 +268,12 @@ class _ProgressTile extends StatelessWidget {
                       ? item.label!
                       : '${item.itemKind} · ${item.itemId.substring(0, 8)}',
                   style: GoogleFonts.vazirmatn(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     fontSize: 16,
                     color: AppColors.ink,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   'درست ${item.totalCorrect} · غلط ${item.totalIncorrect}'
                   '${item.isDue ? ' · الان مرور کن' : ''}',
@@ -326,14 +283,6 @@ class _ProgressTile extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-          Text(
-            '${item.skillScore}',
-            style: GoogleFonts.vazirmatn(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.tealDeep,
             ),
           ),
         ],

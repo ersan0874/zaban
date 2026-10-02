@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/models/question_model.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/chunky_tile.dart';
 
 /// Collects a single multiple-choice answer without revealing correctness.
 class PlacementQuestionView extends StatefulWidget {
@@ -47,38 +48,17 @@ class _PlacementQuestionViewState extends State<PlacementQuestionView> {
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () => setState(() => _selected = option),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.amberSoft
-                        : Colors.white.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected ? AppColors.amber : AppColors.mistDeep,
-                      width: 1.8,
-                    ),
-                  ),
-                  child: Text(
-                    option,
-                    textAlign: TextAlign.right,
-                    textDirection: TextDirection.rtl,
-                    style: GoogleFonts.vazirmatn(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
-                    ),
-                  ),
+            child: ChunkyTile(
+              selected: isSelected,
+              onTap: () => setState(() => _selected = option),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              child: Text(
+                option,
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+                style: GoogleFonts.vazirmatn(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -86,9 +66,7 @@ class _PlacementQuestionViewState extends State<PlacementQuestionView> {
         }),
         const Spacer(),
         ElevatedButton(
-          onPressed: _selected == null
-              ? null
-              : () => widget.onNext(_selected!),
+          onPressed: _selected == null ? null : () => widget.onNext(_selected!),
           child: Text(
             widget.isLast ? 'ثبت نهایی' : 'سؤال بعدی',
             style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),

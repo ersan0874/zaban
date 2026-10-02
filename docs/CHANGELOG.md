@@ -2,6 +2,102 @@
 
 ثبت تغییرات مهم پروژه. جدیدترین بالا.
 
+## 2026-10-02 — انرژی هر صفحه، کومبو پلکانی و بازخورد فوری
+
+### Added
+- API: `POST /sessions/:id/steps` (نمره فوری + ۱ انرژی + کومبو)؛ `src/energy/combo.ts`؛ ستون‌های `user_energy.comboStreak`، `lesson_sessions.steps/comboRewards` (migration `EnergyPerPage`)
+- اپ: نوار بازخورد درست/غلط با پاسخ صحیح، صفحه‌ی کومبو (سه سطح)، شیت «انرژی تمام شد» با شمارنده و شارژ از فروشگاه، شمارنده انرژی و کومبو در بالای درس، تأیید خروج وسط درس
+- ماسکوت «زبی»، کاغذرنگی، کارت استریک و جشن پایان درس
+- صدا و لرزش (`FeedbackFx`، فایل‌های `assets/sounds`)، حالت تاریک و کلید صدا در پروفایل
+- CI: job `mobile` (analyze + test)
+
+### Changed
+- انرژی در شروع درس نمی‌سوزد؛ هر صفحه ۱ انرژی (قبلاً ۱ انرژی برای کل درس). بازه‌ی پاداش از ۱–۷ ثابت به پلکانی (ADR-019)
+- کل اپ راست‌به‌چپ؛ `submit` نمره‌ها را از `steps` می‌خواند و تمرین بدون `step` را رد می‌کند
+- `ENERGY_LESSON_COST` → `ENERGY_STEP_COST` (قدیمی هنوز خوانده می‌شود)
+
+### Fixed
+- `widget_test` خراب (به شبکه/پلاگین وابسته بود) با تست‌های سبک جایگزین شد؛ هشدار `auth_service`
+
+### Removed
+- ویجت‌های بلااستفاده `StatsHeaderBar` و `ShopBottomSheet`
+
+### Why
+درخواست کاربر: انرژی باید با هر صفحه کم شود و رشته‌ی بی‌اشتباه جایزه‌ی بزرگ‌تر بدهد؛ همراه با پیشنهادهای RTL، بازخورد فوری، جشن، صدا و حالت تاریک.
+## 2026-10-02 — فاز ۲۰: تکمیل محتوای AI (بدون تانل)
+
+### Added
+- فایل Word دارای معادله → LibreOffice → PDF → Gemini (LaTeX)؛ `CONTENT_SOFFICE_BIN`؛ LibreOffice در Docker image (`WITH_LIBREOFFICE`)
+- `GET /api/me/late-grades` و `POST /api/me/late-grades/seen`؛ ستون‌های `lateGradedAt`/`lateGradeUnseen` + migration `LateGrades`
+- اپ: برگه «نمره پاسخ‌های تشریحی‌ات رسید» هنگام باز شدن مسیر
+- اپ: `NoteContent` — جدول، تیتر، فهرست، تصویر و `[figure: ...]` در نکته‌ها
+- تست‌ها: `source-extractor.spec.ts`، `note_content_test.dart`، `rtl_math_order_test.dart`
+
+### Fixed
+- ترتیب فرمول‌ها در جمله‌های فارسی (BUG-005)
+- تست دود Flutter (BUG-004)
+- حذف معادله‌های Word (BUG-002)
+
+### Why
+کاربر خواست همه کارهای باقی‌مانده محتوای AI به‌جز تانل تمام شود.
+
+## 2026-10-02 — فاز ۱۹: نمایش محتوای AI در اپ
+
+### Added (Flutter)
+- `MathText` — رندر LaTeX (`flutter_math_fork`) و Markdown سبک با جهت خودکار
+- صفحه «نکته‌های این درس» قبل از تمرین و دکمه نکته‌ها وسط تمرین
+- ماژول‌های `true_false`، `short_answer`، `essay`
+- کارت‌های بازخورد در صفحه نتیجه (نمره تشریحی، در صف تصحیح، پاسخ نمونه، توضیح)
+- انتخاب درس در یونیت‌های چنددرسی
+- `test/ai_content_test.dart` (۷ تست)
+
+### Changed
+- `LessonSessionPayload` فیلد `notes` دارد؛ `QuizScreen` پارامتر `notes` می‌گیرد
+- متن صورت سؤال و گزینه‌ها با `MathText` نمایش داده می‌شود
+
+### Why
+محتوای ساخته‌شده با AI (فاز ۱۸) باید در اپ قابل دیدن و تمرین باشد، از جمله فرمول‌های ریاضی.
+
+## 2026-10-02 — فاز ۱۸: تولید محتوا با AI (Gemini)
+
+### Added
+- `src/ai/llm/` — `LlmProvider` + `GeminiProvider` (`@google/genai`): خروجی JSON Schema، rate limit، retry، fallback به مدل lite، سقف روزانه
+- `src/content/` — `ContentJob`/`SourceFile`/`Proposal`/`DraftLesson`/`DraftExercise`، صف BullMQ، API `/api/admin/content/*`
+- استخراج PDF (تکه‌ای)، عکس، Word (`mammoth`) و متن؛ بلوک‌های منبع شماره‌دار
+- `src/questions/registry/` — هر نوع سؤال یک ماژول (تولید، validate، grade)؛ انواع جدید `true_false`، `short_answer`، `essay`
+- `Lesson.notes`؛ `SessionAttempt.score/feedback/gradingStatus`؛ نمره تشریحی با Gemini + `ESSAY_AI_DAILY_LIMIT` + نمره‌دهی دوباره در پس‌زمینه
+- `src/worker.ts` و سرویس `worker` واقعی در Docker؛ volume آپلود؛ `client_max_body_size` در nginx
+- پنل ادمین: صفحه‌های `AI Content` (آپلود، انتخاب ساختار، بازبینی، انتشار، تست اتصال)
+- migrationها: `Baseline` و `ContentPipeline`؛ با `DB_SYNC=false` هنگام بالا آمدن اجرا می‌شوند
+
+### Changed
+- grader نشست‌ها async شد و از رجیستری می‌خواند؛ خروجی شامل score/feedback
+- `package-lock.json` همگام شد (`npm ci` در CI خطا می‌داد)؛ `app.controller.spec` درست شد
+
+### Removed
+- stub قبلی `AiJob` و مسیرهای `/api/admin/ai/jobs*` و صفحه `ai-jobs` (جدول `ai_jobs` دست‌نخورده می‌ماند)
+
+### Why
+کاربر خواست محتوای آموزشی از روی فایل‌های واقعی با AI ساخته شود، برای هر درسی، با سؤال‌های ماژولار و بازبینی انسانی.
+
+## 2026-10-02 — بازطراحی ظاهر اپ (الهام از دولینگو)
+
+### Changed (Flutter)
+- پالت جدید با معنی ثابت: سبز=پیشروی/درست، آبی=انتخاب، زرد=جایزه/XP، نارنجی=استریک، مرجانی=قلب، بنفش=جم/Super؛ زمینه سفید بدون گرادیان
+- `AppTheme.chunkyStyle`: دکمه‌های سه‌بعدی (لبه تیره زیر دکمه که با لمس فرو می‌رود) برای همه `ElevatedButton`/`OutlinedButton`
+- ویجت `ChunkyTile` برای گزینه‌های تمرین، جفت‌کردن و بانک واژه
+- مسیر: گره‌های دایره‌ای سکه‌ای، مسیر پیچ‌وتاب‌دار، حباب «شروع» روی درس فعلی، بنر یونیت سبز، نوار آمار ساده
+- آزمون: نوار پیشرفت ضخیم، نتیجه با جام و کاشی‌های آمار
+- ناوبری پایین با آیکن‌های رنگی؛ لوگوی سبز در صفحه ورود؛ فونت متن Vazirmatn و اعداد/انگلیسی Nunito
+- ویجت‌های مشترک `widgets/zaban_ui.dart` (ZCard، ZBanner، ZStatTile، ZAvatar، ZProgressBar، ZMessage) و بازطراحی باشگاه (پیشرفت/لیگ/فروشگاه)، دوستان و چت، پروفایل، پیشرفت و مرور، مطالعه واژه، آزمون تعیین سطح و Super
+
+### Fixed (CI)
+- `package-lock.json` ریشه با `package.json` هم‌گام شد (`npm ci` شکست می‌خورد)
+- تست `app.controller.spec.ts` ماک `Question` repository را کم داشت
+
+### Why
+کاربر طراحی قبلی را جذاب نمی‌دانست؛ ظاهر شاد و ساده‌تر برای انگیزه یادگیری. منطق و API دست نخورد.
+
 ## 2026-09-15 — پاس UI: نمایش قابلیت‌ها در ناوبری
 
 ### Changed (Flutter)

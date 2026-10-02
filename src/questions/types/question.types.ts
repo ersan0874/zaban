@@ -12,6 +12,9 @@ export enum QuestionType {
   LISTENING = 'listening',
   SPEAKING = 'speaking',
   IMAGE_WORD = 'image_word',
+  TRUE_FALSE = 'true_false',
+  SHORT_ANSWER = 'short_answer',
+  ESSAY = 'essay',
 }
 
 /** Placement / adaptive difficulty bands */
@@ -130,3 +133,29 @@ export type QuestionAnswer =
   | string
   | string[]
   | Record<string, unknown>;
+
+/** True / false */
+export interface TrueFalseContent {
+  statement: string;
+}
+export interface TrueFalseAnswer {
+  value: boolean;
+  explanation?: string;
+}
+
+/** Short answer — one word, number or short phrase */
+export interface ShortAnswerContent {
+  question: string;
+}
+export interface ShortAnswerAnswer {
+  texts: string[];
+}
+
+/** Essay — graded by the LLM against a reference answer */
+export interface EssayContent {
+  question: string;
+}
+export interface EssayAnswer {
+  referenceAnswer: string;
+  keyPoints: string[];
+}

@@ -51,7 +51,7 @@ class AuthService {
         accessToken: access,
         refreshToken: refresh ?? access,
       );
-      return getMe();
+      return await getMe();
     } on DioException catch (e) {
       throw _mapError(e, 'کد وارد شده نامعتبر است');
     }

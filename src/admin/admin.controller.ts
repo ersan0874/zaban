@@ -19,17 +19,13 @@ import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
-import { AiService } from '../ai/ai.service';
-import { CreateAiJobDto } from '../ai/dto/create-ai-job.dto';
 import { BillingService } from '../billing/billing.service';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
-    private readonly aiService: AiService,
     private readonly billingService: BillingService,
   ) {}
 
@@ -39,10 +35,7 @@ export class AdminController {
   }
 
   @Patch('users/:id/ban')
-  banUser(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: BanUserDto,
-  ) {
+  banUser(@Param('id', ParseUUIDPipe) id: string, @Body() dto: BanUserDto) {
     return this.adminService.setUserBanned(id, dto.banned);
   }
 
@@ -103,27 +96,6 @@ export class AdminController {
     @Body() dto: UpdateExerciseDto,
   ) {
     return this.adminService.updateExercise(id, dto);
-  }
-
-  @Get('ai/jobs')
-  listAiJobs() {
-    return this.aiService.listJobs();
-  }
-
-  @Post('ai/jobs')
-  createAiJob(
-    @CurrentUser() user: { id: string },
-    @Body() dto: CreateAiJobDto,
-  ) {
-    return this.aiService.createJobFromText(
-      dto.sourceText,
-      dto.createdBy ?? user.id,
-    );
-  }
-
-  @Post('ai/jobs/:id/approve')
-  approveAiJob(@Param('id', ParseUUIDPipe) id: string) {
-    return this.aiService.approveJob(id);
   }
 
   @Get('purchases')

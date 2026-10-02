@@ -36,6 +36,12 @@ services:
       JWT_ACCESS_SECRET: dev-access-secret-change-me
       JWT_REFRESH_SECRET: dev-refresh-secret-change-me
       REDIS_URL: redis://redis:6379
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      UPLOAD_DIR: /app/storage/uploads
+      # The separate `worker` service runs the AI queue.
+      AI_WORKER_ENABLED: 'false'
+    volumes:
+      - uploads:/app/storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,17 +57,25 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ['node', '-e', "console.log('AI worker stub — wire BullMQ via src/ai/ai.processor.ts')"]
+    # AI content pipeline + pending essay re-grading (BullMQ consumer).
+    command: ['node', 'dist/worker.js']
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_DATABASE: zaban
+      DB_SYNC: 'true'
       REDIS_URL: redis://redis:6379
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      UPLOAD_DIR: /app/storage/uploads
+    volumes:
+      - uploads:/app/storage
     depends_on:
-      - api
-      - redis
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   admin:
     build:
@@ -86,3 +100,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:

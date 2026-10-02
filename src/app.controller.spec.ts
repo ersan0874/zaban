@@ -9,6 +9,7 @@ import { Word } from './words/entities/word.entity';
 import { Lesson } from './lessons/entities/lesson.entity';
 import { Exercise } from './exercises/entities/exercise.entity';
 import { User } from './users/entities/user.entity';
+import { Question } from './questions/entities/question.entity';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -31,6 +32,7 @@ describe('AppController', () => {
         { provide: getRepositoryToken(Word), useValue: mockRepository },
         { provide: getRepositoryToken(Lesson), useValue: mockRepository },
         { provide: getRepositoryToken(Exercise), useValue: mockRepository },
+        { provide: getRepositoryToken(Question), useValue: mockRepository },
       ],
     }).compile();
 

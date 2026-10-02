@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/repositories/social_repository.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/zaban_ui.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
@@ -98,11 +99,14 @@ class _ChatScreenState extends State<ChatScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.mist,
         appBar: AppBar(
-          title: Text(
-            widget.peerName,
-            style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ZAvatar(name: widget.peerName, size: 32),
+              const SizedBox(width: 10),
+              Text(widget.peerName),
+            ],
           ),
         ),
         body: Column(
@@ -111,8 +115,9 @@ class _ChatScreenState extends State<ChatScreen> {
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _error != null
-                      ? Center(
-                          child: Text(_error!, style: GoogleFonts.vazirmatn()),
+                      ? ZMessage(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          text: _error!,
                         )
                       : ListView.builder(
                           controller: _scroll,
@@ -135,20 +140,22 @@ class _ChatScreenState extends State<ChatScreen> {
                                       MediaQuery.sizeOf(context).width * 0.75,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: m.isMine
-                                      ? AppColors.tealDeep
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: m.isMine
-                                      ? null
-                                      : Border.all(color: AppColors.mistDeep),
+                                  color:
+                                      m.isMine ? AppColors.sky : AppColors.snow,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: m.isMine
+                                        ? AppColors.sky
+                                        : AppColors.line,
+                                    width: 2,
+                                  ),
                                 ),
                                 child: Text(
                                   m.body,
                                   style: GoogleFonts.vazirmatn(
-                                    color: m.isMine
-                                        ? Colors.white
-                                        : AppColors.ink,
+                                    color:
+                                        m.isMine ? Colors.white : AppColors.ink,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -159,23 +166,20 @@ class _ChatScreenState extends State<ChatScreen> {
             SafeArea(
               top: false,
               child: Container(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                color: Colors.white,
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                decoration: BoxDecoration(
+                  color: AppColors.snow,
+                  border: Border(
+                    top: BorderSide(color: AppColors.line, width: 2),
+                  ),
+                ),
                 child: Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _ctrl,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           hintText: 'پیام…',
-                          hintStyle:
-                              GoogleFonts.vazirmatn(color: AppColors.slate),
-                          filled: true,
-                          fillColor: AppColors.mist,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none,
-                          ),
                         ),
                         style: GoogleFonts.vazirmatn(),
                         onSubmitted: (_) => _send(),
@@ -185,7 +189,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     IconButton.filled(
                       onPressed: _sending ? null : _send,
                       style: IconButton.styleFrom(
-                        backgroundColor: AppColors.tealDeep,
+                        backgroundColor: AppColors.sky,
+                        minimumSize: const Size(52, 52),
                       ),
                       icon: const Icon(Icons.send_rounded),
                     ),

@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -23,7 +24,7 @@ import { MasteryModule } from './mastery/mastery.module';
 import { SocialModule } from './social/social.module';
 import { ReengagementModule } from './reengagement/reengagement.module';
 import { AdminModule } from './admin/admin.module';
-import { AiModule } from './ai/ai.module';
+import { ContentModule } from './content/content.module';
 import { BillingModule } from './billing/billing.module';
 import { PlacementTestModule } from './placement-test/placement-test.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
@@ -59,6 +60,9 @@ import { User } from './users/entities/user.entity';
         database: configService.get<string>('DB_DATABASE', 'zaban'),
         autoLoadEntities: true,
         synchronize: configService.get<string>('DB_SYNC', 'true') === 'true',
+        // With DB_SYNC=false (production) the schema comes from migrations.
+        migrations: [join(__dirname, 'database/migrations/*{.ts,.js}')],
+        migrationsRun: configService.get<string>('DB_SYNC', 'true') !== 'true',
       }),
     }),
     TypeOrmModule.forFeature([
@@ -89,7 +93,7 @@ import { User } from './users/entities/user.entity';
     SocialModule,
     ReengagementModule,
     AdminModule,
-    AiModule,
+    ContentModule,
     BillingModule,
     PlacementTestModule,
     SubscriptionsModule,

@@ -24,6 +24,10 @@ export class UserEnergy {
   @Column({ type: 'timestamptz' })
   lastRegenAt: Date;
 
+  /** Pages passed in a row without a mistake (spans lessons). */
+  @Column({ type: 'int', default: 0 })
+  comboStreak: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

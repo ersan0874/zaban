@@ -11,6 +11,13 @@ import { User } from '../../users/entities/user.entity';
 import { Lesson } from '../../lessons/entities/lesson.entity';
 import { SessionAttempt } from './session-attempt.entity';
 
+export type SessionStepRecord = {
+  isCorrect: boolean;
+  score: number;
+  feedback: string | null;
+  gradingStatus: 'graded' | 'pending' | 'ungraded';
+};
+
 export enum LessonSessionStatus {
   ACTIVE = 'active',
   COMPLETED = 'completed',
@@ -43,6 +50,17 @@ export class LessonSession {
   /** Extra review exercise IDs injected into this session (SRS). */
   @Column({ type: 'uuid', array: true, default: [] })
   reviewExerciseIds: string[];
+
+  /**
+   * Pages passed in this session, keyed by exercise id or `note:<index>`.
+   * Filled by POST /sessions/:id/steps; submit reuses these grades.
+   */
+  @Column({ type: 'jsonb', default: {} })
+  steps: Record<string, SessionStepRecord>;
+
+  /** Combo rewards granted during this session (for the result screen). */
+  @Column({ type: 'jsonb', default: [] })
+  comboRewards: Array<Record<string, unknown>>;
 
   @CreateDateColumn()
   createdAt: Date;

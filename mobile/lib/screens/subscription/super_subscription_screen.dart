@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/models/subscription_model.dart';
 import 'package:zaban/services/subscription_service.dart';
 import 'package:zaban/services/user_stats_service.dart';
+import 'package:zaban/theme/app_theme.dart';
 
 class SuperSubscriptionScreen extends StatefulWidget {
   const SuperSubscriptionScreen({super.key});
@@ -66,9 +67,10 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, 'mock'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFBBF24),
-                foregroundColor: const Color(0xFF1A0B2E),
+              style: AppTheme.chunkyStyle(
+                face: AppColors.sun,
+                edge: AppColors.sunDark,
+                foreground: AppColors.ink,
               ),
               child: Text(
                 'شبیه‌سازی پرداخت',
@@ -103,7 +105,7 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(0xFF059669),
+            backgroundColor: AppColors.leafDark,
             content: Text(
               'Super فعال شد! قلب بی‌نهایت داری ♾️',
               textAlign: TextAlign.center,
@@ -131,19 +133,7 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1A0B2E),
-              Color(0xFF2E1065),
-              Color(0xFF4C1D95),
-              Color(0xFF78350F),
-            ],
-            stops: [0.0, 0.35, 0.7, 1.0],
-          ),
-        ),
+        color: const Color(0xFF1C2833),
         child: SafeArea(
           child: Column(
             children: [
@@ -153,7 +143,8 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                      icon: const Icon(Icons.close_rounded,
+                          color: Colors.white70),
                     ),
                     const Spacer(),
                     ListenableBuilder(
@@ -166,14 +157,14 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFBBF24).withValues(alpha: 0.2),
+                            color: AppColors.sun.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(99),
-                            border: Border.all(color: const Color(0xFFFBBF24)),
+                            border: Border.all(color: AppColors.sun),
                           ),
                           child: Text(
                             'Super فعال',
                             style: GoogleFonts.vazirmatn(
-                              color: const Color(0xFFFBBF24),
+                              color: AppColors.sun,
                               fontWeight: FontWeight.w800,
                               fontSize: 12,
                             ),
@@ -194,28 +185,23 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
                         padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(28),
-                          gradient: LinearGradient(
+                          gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              const Color(0xFFFBBF24).withValues(alpha: 0.25),
-                              const Color(0xFFA78BFA).withValues(alpha: 0.2),
-                            ],
-                          ),
-                          border: Border.all(
-                            color: const Color(0xFFFBBF24).withValues(alpha: 0.45),
+                            colors: [AppColors.grape, AppColors.sky],
                           ),
                         ),
                         child: Column(
                           children: [
-                            const Text('♾️', style: TextStyle(fontSize: 48)),
+                            const Icon(Icons.all_inclusive_rounded,
+                                color: Colors.white, size: 56),
                             const SizedBox(height: 12),
                             Text(
                               'Super',
-                              style: GoogleFonts.vazirmatn(
-                                fontSize: 36,
+                              style: GoogleFonts.nunito(
+                                fontSize: 40,
                                 fontWeight: FontWeight.w900,
-                                color: const Color(0xFFFBBF24),
+                                color: Colors.white,
                                 letterSpacing: 1.2,
                               ),
                             ),
@@ -230,11 +216,11 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
                               ),
                             ),
                             const SizedBox(height: 18),
-                            Wrap(
+                            const Wrap(
                               spacing: 8,
                               runSpacing: 8,
                               alignment: WrapAlignment.center,
-                              children: const [
+                              children: [
                                 _FeatureChip(label: 'قلب نامحدود'),
                                 _FeatureChip(label: 'بدون وقفه یادگیری'),
                                 _FeatureChip(label: 'پشتیبانی اولویت‌دار'),
@@ -261,7 +247,7 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
                           _error!,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.vazirmatn(
-                            color: const Color(0xFFFCA5A5),
+                            color: AppColors.coral,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -271,24 +257,18 @@ class _SuperSubscriptionScreenState extends State<SuperSubscriptionScreen> {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: _loading ? null : _upgrade,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFBBF24),
-                            foregroundColor: const Color(0xFF1A0B2E),
-                            disabledBackgroundColor:
-                                const Color(0xFFFBBF24).withValues(alpha: 0.5),
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            elevation: 0,
+                          style: AppTheme.chunkyStyle(
+                            face: AppColors.sun,
+                            edge: AppColors.sunDark,
+                            foreground: AppColors.ink,
                           ),
                           child: _loading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 22,
                                   height: 22,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Color(0xFF1A0B2E),
+                                    color: AppColors.ink,
                                   ),
                                 )
                               : Text(
@@ -331,7 +311,7 @@ class _FeatureChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(99),
       ),
       child: Text(
@@ -370,13 +350,13 @@ class _PlanCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             color: selected
-                ? const Color(0xFFFBBF24).withValues(alpha: 0.18)
-                : Colors.white.withValues(alpha: 0.08),
+                ? AppColors.sky.withValues(alpha: 0.18)
+                : Colors.white.withValues(alpha: 0.06),
             border: Border.all(
               color: selected
-                  ? const Color(0xFFFBBF24)
+                  ? AppColors.sky
                   : Colors.white.withValues(alpha: 0.15),
-              width: selected ? 2 : 1,
+              width: 2,
             ),
           ),
           child: Row(
@@ -387,15 +367,13 @@ class _PlanCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: selected
-                        ? const Color(0xFFFBBF24)
-                        : Colors.white54,
+                    color: selected ? AppColors.sky : Colors.white54,
                     width: 2,
                   ),
-                  color: selected ? const Color(0xFFFBBF24) : Colors.transparent,
+                  color: selected ? AppColors.sky : Colors.transparent,
                 ),
                 child: selected
-                    ? const Icon(Icons.check, size: 14, color: Color(0xFF1A0B2E))
+                    ? const Icon(Icons.check, size: 14, color: Colors.white)
                     : null,
               ),
               const SizedBox(width: 14),
@@ -421,7 +399,7 @@ class _PlanCard extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF7C3AED),
+                              color: AppColors.grape,
                               borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
@@ -455,7 +433,7 @@ class _PlanCard extends StatelessWidget {
                     style: GoogleFonts.vazirmatn(
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
-                      color: const Color(0xFFFBBF24),
+                      color: AppColors.sun,
                     ),
                   ),
                   Text(

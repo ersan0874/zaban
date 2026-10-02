@@ -5,6 +5,7 @@ import 'package:zaban/repositories/economy_repository.dart';
 import 'package:zaban/screens/subscription/super_subscription_screen.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/zaban_ui.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key, this.embedded = false});
@@ -116,106 +117,89 @@ class _ShopScreenState extends State<ShopScreen> {
     final body = _loading
         ? const Center(child: CircularProgressIndicator())
         : _error != null
-            ? Center(child: Text(_error!, style: GoogleFonts.vazirmatn()))
+            ? ZMessage(
+                icon: Icons.storefront_outlined,
+                text: _error!,
+                actionLabel: 'تلاش دوباره',
+                onAction: _load,
+              )
             : RefreshIndicator(
                 onRefresh: _load,
                 child: ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF0F766E), Color(0xFF0D9488)],
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
+                    ZBanner(
+                      title: '$_gems جم',
+                      subtitle: 'با جم قلب، انرژی و فریز استریک بخر',
+                      color: AppColors.grape,
+                      edge: AppColors.grapeDark,
+                      icon: Icons.diamond_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    ZCard(
+                      color: AppColors.ink,
+                      borderColor: AppColors.ink,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SuperSubscriptionScreen(),
+                          ),
+                        );
+                      },
                       child: Row(
                         children: [
-                          const Icon(Icons.diamond_rounded,
-                              color: Colors.white, size: 28),
-                          const SizedBox(width: 10),
-                          Text(
-                            'موجودی جم: $_gems',
-                            style: GoogleFonts.vazirmatn(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 18,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
                             ),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [AppColors.grape, AppColors.sky],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'SUPER',
+                              style: AppTheme.latin(
+                                fontSize: 13,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'قلب نامحدود و امکانات ویژه',
+                              style: GoogleFonts.vazirmatn(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_left_rounded,
+                            color: Colors.white,
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Material(
-                      color: AppColors.amberSoft,
-                      borderRadius: BorderRadius.circular(16),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  const SuperSubscriptionScreen(),
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'زبان Super',
-                                      style: GoogleFonts.vazirmatn(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      'قلب نامحدود و امکانات ویژه',
-                                      style: GoogleFonts.vazirmatn(
-                                        color: AppColors.inkSoft,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.chevron_left_rounded),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
                     if (sub != null && sub.active) ...[
                       const SizedBox(height: 12),
-                      Container(
+                      ZCard(
+                        color: AppColors.leafSoft,
+                        borderColor: AppColors.leaf,
                         padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
                         child: Text(
-                          'اشتراک نامحدود فعال تا ${sub.expiresAt.toLocal()}',
+                          'اشتراک انرژی نامحدود فعال است',
                           style: GoogleFonts.vazirmatn(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.leafDark,
                           ),
                         ),
                       ),
                     ],
-                    const SizedBox(height: 20),
-                    Text(
-                      'خرید با جم',
-                      style: GoogleFonts.vazirmatn(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    const ZSectionTitle('خرید با جم'),
                     if (_gemItems.isEmpty)
                       Text(
                         'آیتم فروشگاهی موجود نیست.',
@@ -224,6 +208,8 @@ class _ShopScreenState extends State<ShopScreen> {
                     else
                       ..._gemItems.map(
                         (item) => _ShopTile(
+                          icon: _iconFor(item.effectType),
+                          color: _colorFor(item.effectType),
                           title: item.title,
                           subtitle:
                               '${item.description} · ${item.priceGems} جم',
@@ -231,16 +217,10 @@ class _ShopScreenState extends State<ShopScreen> {
                           onBuy: _buying ? null : () => _buyGems(item),
                         ),
                       ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'خرید تستی (پول واقعی)',
-                      style: GoogleFonts.vazirmatn(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    const ZSectionTitle('خرید تستی (پول واقعی)'),
                     _ShopTile(
+                      icon: Icons.bolt_rounded,
+                      color: AppColors.sky,
                       title: 'بسته انرژی (+10)',
                       subtitle: 'energy_pack_10',
                       actionLabel: 'خرید تست',
@@ -249,6 +229,8 @@ class _ShopScreenState extends State<ShopScreen> {
                           : () => _buyIap('energy_pack_10', 'بسته انرژی'),
                     ),
                     _ShopTile(
+                      icon: Icons.all_inclusive_rounded,
+                      color: AppColors.sky,
                       title: 'انرژی نامحدود — ۱ روز',
                       subtitle: 'unlimited_1d',
                       actionLabel: 'خرید تست',
@@ -257,6 +239,8 @@ class _ShopScreenState extends State<ShopScreen> {
                           : () => _buyIap('unlimited_1d', 'اشتراک ۱ روزه'),
                     ),
                     _ShopTile(
+                      icon: Icons.all_inclusive_rounded,
+                      color: AppColors.sky,
                       title: 'انرژی نامحدود — ۱ هفته',
                       subtitle: 'unlimited_1w',
                       actionLabel: 'خرید تست',
@@ -265,6 +249,8 @@ class _ShopScreenState extends State<ShopScreen> {
                           : () => _buyIap('unlimited_1w', 'اشتراک ۱ هفته'),
                     ),
                     _ShopTile(
+                      icon: Icons.all_inclusive_rounded,
+                      color: AppColors.sky,
                       title: 'انرژی نامحدود — ۱ ماه',
                       subtitle: 'unlimited_1m',
                       actionLabel: 'خرید تست',
@@ -286,7 +272,6 @@ class _ShopScreenState extends State<ShopScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.mist,
         appBar: AppBar(
           title: Text(
             'فروشگاه',
@@ -301,12 +286,16 @@ class _ShopScreenState extends State<ShopScreen> {
 
 class _ShopTile extends StatelessWidget {
   const _ShopTile({
+    required this.icon,
+    required this.color,
     required this.title,
     required this.subtitle,
     required this.actionLabel,
     required this.onBuy,
   });
 
+  final IconData icon;
+  final Color color;
   final String title;
   final String subtitle;
   final String actionLabel;
@@ -314,23 +303,20 @@ class _ShopTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ZCard(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.mistDeep),
-      ),
+      padding: const EdgeInsets.all(12),
       child: Row(
         children: [
+          Icon(icon, color: color, size: 40),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
+                  style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w800),
                 ),
                 Text(
                   subtitle,
@@ -342,12 +328,24 @@ class _ShopTile extends StatelessWidget {
               ],
             ),
           ),
-          FilledButton(
-            onPressed: onBuy,
-            child: Text(actionLabel, style: GoogleFonts.vazirmatn()),
-          ),
+          const SizedBox(width: 8),
+          FilledButton(onPressed: onBuy, child: Text(actionLabel)),
         ],
       ),
     );
   }
+}
+
+IconData _iconFor(String effectType) {
+  if (effectType.contains('freeze')) return Icons.ac_unit_rounded;
+  if (effectType.contains('heart')) return Icons.favorite_rounded;
+  if (effectType.contains('energy')) return Icons.bolt_rounded;
+  return Icons.card_giftcard_rounded;
+}
+
+Color _colorFor(String effectType) {
+  if (effectType.contains('freeze')) return AppColors.sky;
+  if (effectType.contains('heart')) return AppColors.coral;
+  if (effectType.contains('energy')) return AppColors.sun;
+  return AppColors.grape;
 }

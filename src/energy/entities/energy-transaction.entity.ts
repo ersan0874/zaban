@@ -12,6 +12,7 @@ import { User } from '../../users/entities/user.entity';
 export enum EnergyTxnReason {
   REGEN = 'regen',
   LESSON_START = 'lesson_start',
+  STEP = 'step',
   COMBO_REWARD = 'combo_reward',
   SEED = 'seed',
   LOOT_BOX = 'loot_box',

@@ -58,28 +58,16 @@ class _LoginScreenState extends State<LoginScreen> {
           TextField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'ایمیل',
-              labelStyle: GoogleFonts.vazirmatn(),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _password,
             obscureText: true,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'رمز عبور',
-              labelStyle: GoogleFonts.vazirmatn(),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
             ),
           ),
           if (_error != null) ...[

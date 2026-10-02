@@ -80,9 +80,13 @@ class UnitDetail {
     );
   }
 
+  /// Lessons that have exercises, in path order (AI units often have several).
+  List<UnitLessonSummary> get practiceLessons =>
+      lessons.where((l) => l.exerciseCount > 0).toList()
+        ..sort((a, b) => a.order.compareTo(b.order));
+
   UnitLessonSummary? get quizLesson {
-    final withExercises =
-        lessons.where((l) => l.exerciseCount > 0).toList();
+    final withExercises = lessons.where((l) => l.exerciseCount > 0).toList();
     if (withExercises.isNotEmpty) {
       withExercises.sort((a, b) => a.order.compareTo(b.order));
       return withExercises.first;
@@ -102,10 +106,12 @@ class CurriculumRepository {
     try {
       final res = await _client.dio.get<List<dynamic>>('/courses');
       return (res.data ?? [])
-          .map((e) => CourseSummary.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              CourseSummary.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
     } on DioException catch (e) {
-      throw ApiException(ApiClient.messageFrom(e), statusCode: e.response?.statusCode);
+      throw ApiException(ApiClient.messageFrom(e),
+          statusCode: e.response?.statusCode);
     }
   }
 
@@ -121,11 +127,13 @@ class CurriculumRepository {
         Map<String, dynamic>.from(data['course'] as Map),
       );
       final nodes = (data['nodes'] as List? ?? [])
-          .map((e) => PathNodeModel.fromApi(Map<String, dynamic>.from(e as Map)))
+          .map(
+              (e) => PathNodeModel.fromApi(Map<String, dynamic>.from(e as Map)))
           .toList();
       return (course: course, nodes: nodes);
     } on DioException catch (e) {
-      throw ApiException(ApiClient.messageFrom(e), statusCode: e.response?.statusCode);
+      throw ApiException(ApiClient.messageFrom(e),
+          statusCode: e.response?.statusCode);
     }
   }
 
@@ -134,7 +142,8 @@ class CurriculumRepository {
       final res = await _client.dio.get<Map<String, dynamic>>('/units/$unitId');
       return UnitDetail.fromJson(res.data ?? {});
     } on DioException catch (e) {
-      throw ApiException(ApiClient.messageFrom(e), statusCode: e.response?.statusCode);
+      throw ApiException(ApiClient.messageFrom(e),
+          statusCode: e.response?.statusCode);
     }
   }
 }

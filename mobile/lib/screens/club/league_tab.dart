@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:zaban/repositories/economy_repository.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/zaban_ui.dart';
 
 class LeagueTab extends StatefulWidget {
   const LeagueTab({super.key});
@@ -74,124 +75,116 @@ class _LeagueTabState extends State<LeagueTab> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(_error!, style: GoogleFonts.vazirmatn()),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: _load,
-                child: Text('تلاش دوباره', style: GoogleFonts.vazirmatn()),
-              ),
-            ],
-          ),
-        ),
+      return ZMessage(
+        icon: Icons.shield_outlined,
+        text: _error!,
+        actionLabel: 'تلاش دوباره',
+        onAction: _load,
       );
     }
 
-    final tier = _tierFa(_current?.tier ?? _board?.tier ?? 'bronze');
+    final tierKey = (_current?.tier ?? _board?.tier ?? 'bronze').toLowerCase();
+    final tier = _tierFa(tierKey);
+    final tierColor = _tierColor(tierKey);
     final xp = _current?.weeklyXp ?? 0;
+    final entries = _board?.entries ?? [];
 
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: [Color(0xFF0F766E), Color(0xFF0D9488)],
+          ZBanner(
+            title: 'لیگ $tier',
+            subtitle: 'این هفته $xp XP گرفتی',
+            color: tierColor.$1,
+            edge: tierColor.$2,
+            icon: Icons.shield_rounded,
+          ),
+          const ZSectionTitle('جدول این هفته'),
+          if (entries.isEmpty)
+            ZCard(
+              child: Text(
+                'هنوز کسی در لیگ نیست. یک درس تمام کن تا اولین نفر باشی.',
+                style: GoogleFonts.vazirmatn(
+                  color: AppColors.slate,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'لیگ هفتگی · $tier',
-                  style: GoogleFonts.vazirmatn(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'XP این هفته: $xp',
-                  style: GoogleFonts.vazirmatn(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'رتبه‌بندی',
-            style: GoogleFonts.vazirmatn(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if ((_board?.entries ?? []).isEmpty)
-            Text(
-              'هنوز کسی در لیگ نیست — یک درس تمام کن.',
-              style: GoogleFonts.vazirmatn(color: AppColors.slate),
             )
           else
-            ..._board!.entries.map((e) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: e.isYou ? AppColors.tealSoft : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: e.isYou ? AppColors.teal : AppColors.mistDeep,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 36,
-                      child: Text(
-                        '#${e.rank}',
-                        style: GoogleFonts.vazirmatn(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.inkSoft,
-                        ),
+            ZCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (final (i, e) in entries.indexed) ...[
+                    if (i > 0) Divider(height: 2, color: AppColors.line),
+                    Container(
+                      color: e.isYou ? AppColors.skySoft : null,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
                       ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        e.isYou ? '${e.displayName} (تو)' : e.displayName,
-                        style: GoogleFonts.vazirmatn(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '${e.weeklyXp} XP',
-                      style: GoogleFonts.vazirmatn(
-                        color: AppColors.tealDeep,
-                        fontWeight: FontWeight.w700,
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 32,
+                            child: Text(
+                              '${e.rank}',
+                              textAlign: TextAlign.center,
+                              style: AppTheme.latin(
+                                fontSize: 16,
+                                color: e.rank <= 3
+                                    ? AppColors.sunDark
+                                    : AppColors.slate,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ZAvatar(name: e.displayName, size: 40),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              e.isYou ? '${e.displayName} (تو)' : e.displayName,
+                              style: GoogleFonts.vazirmatn(
+                                fontWeight: FontWeight.w800,
+                                color:
+                                    e.isYou ? AppColors.skyDark : AppColors.ink,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${e.weeklyXp} XP',
+                            textDirection: TextDirection.ltr,
+                            style: AppTheme.latin(
+                              fontSize: 14,
+                              color: AppColors.inkSoft,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                ),
-              );
-            }),
+                ],
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  (Color, Color) _tierColor(String tier) {
+    switch (tier) {
+      case 'silver':
+        return (const Color(0xFF9AA8B4), const Color(0xFF7A8996));
+      case 'gold':
+        return (AppColors.sun, AppColors.sunDark);
+      case 'platinum':
+        return (AppColors.sky, AppColors.skyDark);
+      case 'diamond':
+        return (AppColors.grape, AppColors.grapeDark);
+      default:
+        return (const Color(0xFFCD8B4E), const Color(0xFFA86B33));
+    }
   }
 }

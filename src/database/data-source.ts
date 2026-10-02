@@ -1,9 +1,9 @@
 import { DataSource } from 'typeorm';
 
 /**
- * TypeORM CLI data source — ready for future migrations.
- * Dev still uses synchronize via AppModule; production should set DB_SYNC=false
- * and run migrations with this DataSource (env vars must be present).
+ * TypeORM CLI data source — used for generating and running migrations.
+ * Dev uses synchronize via AppModule; with DB_SYNC=false the app runs these
+ * migrations on boot. Generate new ones with `npm run migration:generate`.
  */
 export default new DataSource({
   type: 'postgres',

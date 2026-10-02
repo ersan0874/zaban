@@ -15,6 +15,7 @@ import 'package:zaban/screens/quiz/quiz_screen.dart';
 import 'package:zaban/screens/study/word_study_screen.dart';
 import 'package:zaban/services/api_client.dart';
 import 'package:zaban/theme/app_theme.dart';
+import 'package:zaban/widgets/late_grades_sheet.dart';
 
 class LearningPathScreen extends StatefulWidget {
   const LearningPathScreen({super.key, this.embedded = false});
@@ -54,6 +55,10 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
     _loadPath();
+    // Essay answers that the AI graded after the learner left the lesson.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) showLateGradesIfAny(context);
+    });
   }
 
   @override
@@ -159,6 +164,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
             unitTitle: _reentry?.diagnosticLessonTitle ?? 'آزمون بازگشت',
             sessionId: session.sessionId,
             questions: session.exercises,
+            energy: session.energy,
           ),
         ),
       );
@@ -209,121 +215,97 @@ class _LearningPathScreenState extends State<LearningPathScreen>
     final nodes = _nodes;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF7FBFC),
-              AppColors.mist,
-              AppColors.mistDeep,
-            ],
-            stops: [0.0, 0.45, 1.0],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          tooltip: 'پیشرفت و مرور',
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const ProgressScreen(),
-                              ),
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.psychology_alt_rounded,
-                            color: AppColors.inkSoft,
-                          ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              Text(
-                                'زبان',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.vazirmatn(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.ink,
-                                  height: 1.1,
-                                ),
-                              ),
-                              Text(
-                                _courseTitle ?? 'مسیر یادگیری',
-                                style: GoogleFonts.vazirmatn(
-                                  fontSize: 13,
-                                  color: AppColors.slate,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'تازه‌سازی',
-                          onPressed: _loading ? null : _loadPath,
-                          icon: const Icon(
-                            Icons.refresh_rounded,
-                            color: AppColors.inkSoft,
-                          ),
-                        ),
-                        if (!widget.embedded)
-                          IconButton(
-                            tooltip: 'پروفایل',
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => ProfileScreen(
-                                    onLoggedOut: () {
-                                      Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute<void>(
-                                          builder: (_) => const AuthGate(),
-                                        ),
-                                        (_) => false,
-                                      );
-                                    },
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.person_rounded,
-                              color: AppColors.inkSoft,
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _StatsStrip(
+      backgroundColor: AppColors.snow,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: AppColors.line, width: 2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _StatsStrip(
                       energy: _energy,
                       gami: _gami,
                       gems: _gems,
                     ),
-                    if (_reentry?.requiresDiagnostic == true) ...[
-                      const SizedBox(height: 12),
-                      _DiagnosticBanner(
-                        title: _reentry!.diagnosticLessonTitle ?? 'آزمون بازگشت',
-                        busy: _startingDiagnostic,
-                        onStart: _startDiagnostic,
+                  ),
+                  IconButton(
+                    tooltip: 'پیشرفت و مرور',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ProgressScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.insights_rounded,
+                      color: AppColors.sky,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'تازه‌سازی',
+                    onPressed: _loading ? null : _loadPath,
+                    icon: Icon(
+                      Icons.refresh_rounded,
+                      color: AppColors.locked,
+                    ),
+                  ),
+                  if (!widget.embedded)
+                    IconButton(
+                      tooltip: 'پروفایل',
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => ProfileScreen(
+                              onLoggedOut: () {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const AuthGate(),
+                                  ),
+                                  (_) => false,
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.person_rounded,
+                        color: AppColors.grape,
                       ),
-                    ],
-                  ],
-                ),
+                    ),
+                ],
               ),
-              Expanded(child: _buildBody(nodes)),
-            ],
-          ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: Column(
+                children: [
+                  _UnitBanner(
+                    courseTitle: _courseTitle ?? 'مسیر یادگیری',
+                    nodes: nodes,
+                  ),
+                  if (_reentry?.requiresDiagnostic == true) ...[
+                    const SizedBox(height: 12),
+                    _DiagnosticBanner(
+                      title: _reentry!.diagnosticLessonTitle ?? 'آزمون بازگشت',
+                      busy: _startingDiagnostic,
+                      onStart: _startDiagnostic,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Expanded(child: _buildBody(nodes)),
+          ],
         ),
       ),
     );
@@ -340,21 +322,25 @@ class _LearningPathScreenState extends State<LearningPathScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Icon(
+                Icons.cloud_off_rounded,
+                size: 56,
+                color: AppColors.locked,
+              ),
+              const SizedBox(height: 12),
               Text(
                 _error!,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.vazirmatn(
                   fontSize: 16,
-                  color: AppColors.danger,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.inkSoft,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _loadPath,
-                child: Text(
-                  'تلاش دوباره',
-                  style: GoogleFonts.vazirmatn(fontWeight: FontWeight.w700),
-                ),
+                child: const Text('تلاش دوباره'),
               ),
             ],
           ),
@@ -370,50 +356,117 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       );
     }
 
+    // Nodes sway gently left and right like a winding trail.
+    const swing = [0.0, -0.45, -0.75, -0.45, 0.0, 0.45, 0.75, 0.45];
+    const rowHeight = 104.0;
+    const bubbleSpace = 44.0;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        const rowHeight = 140.0;
-        final totalHeight = nodes.length * rowHeight + 80;
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          child: SizedBox(
-            height: totalHeight,
-            width: constraints.maxWidth,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: _ZigzagPathPainter(
-                      nodeCount: nodes.length,
-                      rowHeight: rowHeight,
-                    ),
+        final amplitude = math.min(constraints.maxWidth * 0.22, 110.0);
+        return ListView.builder(
+          padding: const EdgeInsets.only(bottom: 32),
+          itemCount: nodes.length,
+          itemBuilder: (context, index) {
+            final node = nodes[index];
+            final active = node.status == PathNodeStatus.active;
+            final dx = swing[index % swing.length] * amplitude;
+            return SizedBox(
+              height: rowHeight + (active ? bubbleSpace : 0),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Transform.translate(
+                  offset: Offset(dx, 0),
+                  child: _PathNode(
+                    node: node,
+                    pulse: active ? _pulseController : null,
+                    onTap: () => _onNodeTap(node),
                   ),
                 ),
-                ...List.generate(nodes.length, (index) {
-                  final node = nodes[index];
-                  final isLeft = index.isEven;
-                  final top = index * rowHeight;
-                  final horizontalPadding = constraints.maxWidth * 0.14;
-
-                  return Positioned(
-                    top: top,
-                    left: isLeft ? horizontalPadding : null,
-                    right: isLeft ? null : horizontalPadding,
-                    child: _PathNode(
-                      node: node,
-                      pulse: node.status == PathNodeStatus.active
-                          ? _pulseController
-                          : null,
-                      onTap: () => _onNodeTap(node),
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
+    );
+  }
+}
+
+class _UnitBanner extends StatelessWidget {
+  const _UnitBanner({required this.courseTitle, required this.nodes});
+
+  final String courseTitle;
+  final List<PathNodeModel> nodes;
+
+  @override
+  Widget build(BuildContext context) {
+    final done =
+        nodes.where((n) => n.status == PathNodeStatus.completed).length;
+    final current = nodes.cast<PathNodeModel?>().firstWhere(
+          (n) => n!.status == PathNodeStatus.active,
+          orElse: () => null,
+        );
+    return Container(
+      padding: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: AppColors.leafDark,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        decoration: BoxDecoration(
+          color: AppColors.leaf,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nodes.isEmpty
+                        ? 'مسیر یادگیری'
+                        : 'یونیت ${current?.order ?? done} از ${nodes.length}',
+                    style: GoogleFonts.vazirmatn(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white.withValues(alpha: 0.85),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    current?.title ?? courseTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.vazirmatn(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  width: 2,
+                ),
+              ),
+              child: const Icon(
+                Icons.menu_book_rounded,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -496,46 +549,31 @@ class _StatsStrip extends StatelessWidget {
       child: Row(
         children: [
           _StatChip(
-            icon: Icons.bolt_rounded,
-            iconColor: AppColors.amber,
-            label: energy == null
-                ? '—'
-                : '${energy!.balance}/${energy!.cap}',
-          ),
-          const SizedBox(width: 8),
-          _StatChip(
-            icon: Icons.favorite_rounded,
-            iconColor: AppColors.danger,
-            label: gami == null
-                ? '—'
-                : '${gami!.hearts}/${gami!.heartsCap}',
-          ),
-          const SizedBox(width: 8),
-          _StatChip(
             icon: Icons.local_fire_department_rounded,
-            iconColor: const Color(0xFFEA580C),
+            color: AppColors.flame,
             label: '${gami?.streakCount ?? 0}',
           ),
-          const SizedBox(width: 8),
-          _StatChip(
-            icon: Icons.star_rounded,
-            iconColor: AppColors.tealDeep,
-            label: '${gami?.xp ?? 0}',
-          ),
-          const SizedBox(width: 8),
           _StatChip(
             icon: Icons.diamond_rounded,
-            iconColor: const Color(0xFF0284C7),
+            color: AppColors.grape,
             label: '$gems',
           ),
-          if ((gami?.unopenedLootCount ?? 0) > 0) ...[
-            const SizedBox(width: 8),
+          _StatChip(
+            icon: Icons.favorite_rounded,
+            color: AppColors.coral,
+            label: gami == null ? '—' : '${gami!.hearts}',
+          ),
+          _StatChip(
+            icon: Icons.bolt_rounded,
+            color: AppColors.sky,
+            label: energy == null ? '—' : '${energy!.balance}',
+          ),
+          if ((gami?.unopenedLootCount ?? 0) > 0)
             _StatChip(
               icon: Icons.card_giftcard_rounded,
-              iconColor: AppColors.amber,
+              color: AppColors.leaf,
               label: '${gami!.unopenedLootCount}',
             ),
-          ],
         ],
       ),
     );
@@ -545,43 +583,24 @@ class _StatsStrip extends StatelessWidget {
 class _StatChip extends StatelessWidget {
   const _StatChip({
     required this.icon,
-    required this.iconColor,
+    required this.color,
     required this.label,
   });
 
   final IconData icon;
-  final Color iconColor;
+  final Color color;
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.mistDeep),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 10),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: iconColor, size: 18),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: GoogleFonts.vazirmatn(
-              fontWeight: FontWeight.w800,
-              color: AppColors.ink,
-              fontSize: 13,
-            ),
-          ),
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: 3),
+          Text(label, style: AppTheme.latin(fontSize: 16, color: color)),
         ],
       ),
     );
@@ -605,152 +624,101 @@ class _PathNode extends StatelessWidget {
     final active = node.status == PathNodeStatus.active;
     final completed = node.status == PathNodeStatus.completed;
 
-    Widget nodeBody = AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      width: 78,
-      height: 78,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: locked
-            ? null
-            : LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: completed
-                    ? const [AppColors.success, Color(0xFF047857)]
-                    : const [AppColors.teal, AppColors.tealDeep],
-              ),
-        color: locked ? const Color(0xFFE2E8F0) : null,
-        boxShadow: locked
-            ? null
-            : [
-                BoxShadow(
-                  color: (active ? AppColors.teal : AppColors.success)
-                      .withValues(alpha: 0.35),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-        border: Border.all(
-          color: locked ? const Color(0xFFCBD5E1) : Colors.white.withValues(alpha: 0.55),
-          width: 2.5,
+    final face = locked
+        ? AppColors.line
+        : completed
+            ? AppColors.sun
+            : AppColors.leaf;
+    final edge = locked
+        ? AppColors.lineDark
+        : completed
+            ? AppColors.sunDark
+            : AppColors.leafDark;
+
+    Widget coin = Container(
+      width: 72,
+      height: 72,
+      padding: const EdgeInsets.only(bottom: 7),
+      decoration: BoxDecoration(color: edge, shape: BoxShape.circle),
+      child: Container(
+        decoration: BoxDecoration(color: face, shape: BoxShape.circle),
+        child: Icon(
+          locked
+              ? Icons.lock_rounded
+              : completed
+                  ? Icons.check_rounded
+                  : Icons.star_rounded,
+          color: locked ? AppColors.locked : Colors.white,
+          size: 34,
         ),
-      ),
-      child: Icon(
-        locked
-            ? Icons.lock_rounded
-            : completed
-                ? Icons.check_rounded
-                : Icons.auto_stories_rounded,
-        color: locked ? AppColors.locked : Colors.white,
-        size: 30,
       ),
     );
 
-    if (pulse != null) {
-      nodeBody = AnimatedBuilder(
-        animation: pulse!,
-        builder: (context, child) {
-          final scale = 1 + (pulse!.value * 0.06);
-          return Transform.scale(scale: scale, child: child);
-        },
-        child: nodeBody,
+    if (active) {
+      coin = Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 94,
+            height: 94,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.leafSoft, width: 8),
+            ),
+          ),
+          coin,
+          Positioned(
+            top: -44,
+            child: _StartBubble(pulse: pulse),
+          ),
+        ],
       );
     }
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          nodeBody,
-          const SizedBox(height: 10),
-          SizedBox(
-            width: 120,
-            child: Text(
-              'یونیت ${node.order}',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.vazirmatn(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: locked ? AppColors.locked : AppColors.inkSoft,
-              ),
-            ),
-          ),
-        ],
+    return Semantics(
+      button: true,
+      label: '${node.title} — یونیت ${node.order}',
+      child: GestureDetector(
+        onTap: onTap,
+        child: coin,
       ),
     );
   }
 }
 
-class _ZigzagPathPainter extends CustomPainter {
-  _ZigzagPathPainter({
-    required this.nodeCount,
-    required this.rowHeight,
-  });
+class _StartBubble extends StatelessWidget {
+  const _StartBubble({this.pulse});
 
-  final int nodeCount;
-  final double rowHeight;
+  final Animation<double>? pulse;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    if (nodeCount < 2) return;
-
-    final paint = Paint()
-      ..color = AppColors.pathLine
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-
-    final dashPaint = Paint()
-      ..color = AppColors.teal.withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path();
-    for (var i = 0; i < nodeCount; i++) {
-      final isLeft = i.isEven;
-      final x = isLeft ? size.width * 0.22 : size.width * 0.78;
-      final y = i * rowHeight + 39;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        final prevLeft = (i - 1).isEven;
-        final prevX = prevLeft ? size.width * 0.22 : size.width * 0.78;
-        final prevY = (i - 1) * rowHeight + 39;
-        final midY = (prevY + y) / 2;
-        path.cubicTo(
-          prevX,
-          midY,
-          x,
-          midY,
-          x,
-          y,
-        );
-      }
-    }
-
-    _drawDashedPath(canvas, path, dashPaint);
-    canvas.drawPath(path, paint..color = AppColors.pathLine.withValues(alpha: 0.55));
-  }
-
-  void _drawDashedPath(Canvas canvas, Path path, Paint paint) {
-    for (final metric in path.computeMetrics()) {
-      var distance = 0.0;
-      const dash = 10.0;
-      const gap = 8.0;
-      while (distance < metric.length) {
-        final next = math.min(distance + dash, metric.length);
-        canvas.drawPath(metric.extractPath(distance, next), paint);
-        distance = next + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ZigzagPathPainter oldDelegate) {
-    return oldDelegate.nodeCount != nodeCount ||
-        oldDelegate.rowHeight != rowHeight;
+  Widget build(BuildContext context) {
+    final bubble = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.snow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.line, width: 2),
+      ),
+      child: Text(
+        'شروع',
+        style: GoogleFonts.vazirmatn(
+          fontSize: 14,
+          fontWeight: FontWeight.w900,
+          color: AppColors.leaf,
+        ),
+      ),
+    );
+    if (pulse == null) return bubble;
+    return AnimatedBuilder(
+      animation: pulse!,
+      builder: (context, child) => Transform.translate(
+        offset: Offset(0, -4 * pulse!.value),
+        child: child,
+      ),
+      child: bubble,
+    );
   }
 }
 
@@ -768,6 +736,9 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
   final _sessions = SessionRepository();
   bool _busy = false;
   String? _error;
+
+  /// Set when the unit has several lessons and the learner must pick one.
+  UnitDetail? _unit;
 
   Future<void> _startStudy() async {
     setState(() {
@@ -806,6 +777,13 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
     });
     try {
       final unit = await _curriculum.getUnit(widget.node.id);
+      if (unit.practiceLessons.length > 1) {
+        setState(() {
+          _busy = false;
+          _unit = unit;
+        });
+        return;
+      }
       final lesson = unit.quizLesson;
       if (lesson == null) {
         setState(() {
@@ -814,18 +792,7 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
         });
         return;
       }
-      final session = await _sessions.startLessonSession(lesson.id);
-      if (!mounted) return;
-      Navigator.pop(context);
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => QuizScreen(
-            unitTitle: unit.title,
-            sessionId: session.sessionId,
-            questions: session.exercises,
-          ),
-        ),
-      );
+      await _startLesson(unit, lesson);
     } on ApiException catch (e) {
       setState(() {
         _busy = false;
@@ -839,100 +806,178 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
     }
   }
 
+  Future<void> _pickLesson(UnitDetail unit, UnitLessonSummary lesson) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await _startLesson(unit, lesson);
+    } on ApiException catch (e) {
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    } catch (_) {
+      setState(() {
+        _busy = false;
+        _error = 'شروع آزمون ناموفق بود';
+      });
+    }
+  }
+
+  Future<void> _startLesson(UnitDetail unit, UnitLessonSummary lesson) async {
+    final session = await _sessions.startLessonSession(lesson.id);
+    if (!mounted) return;
+    Navigator.pop(context);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => QuizScreen(
+          unitTitle:
+              unit.practiceLessons.length > 1 ? lesson.title : unit.title,
+          sessionId: session.sessionId,
+          questions: session.exercises,
+          notes: session.notes,
+          energy: session.energy,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final node = widget.node;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
-      decoration: BoxDecoration(
-        color: AppColors.cloud,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.18),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
-          ),
-        ],
+    final onLeaf = AppTheme.chunkyStyle(
+      face: Colors.white,
+      edge: AppColors.isDark ? AppColors.leafDark : const Color(0xFFD6EFC6),
+      foreground: AppColors.leafDark,
+      textStyle: GoogleFonts.vazirmatn(
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 42,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.mistDeep,
-              borderRadius: BorderRadius.circular(99),
-            ),
+    );
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        padding: const EdgeInsets.only(bottom: 5),
+        decoration: BoxDecoration(
+          color: AppColors.leafDark,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+          decoration: BoxDecoration(
+            color: AppColors.leaf,
+            borderRadius: BorderRadius.circular(24),
           ),
-          const SizedBox(height: 22),
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              gradient: const LinearGradient(
-                colors: [AppColors.teal, AppColors.tealDeep],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                node.title,
+                style: GoogleFonts.vazirmatn(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
               ),
-            ),
-            child: const Icon(Icons.menu_book_rounded, color: Colors.white),
+              const SizedBox(height: 4),
+              Text(
+                'یونیت ${node.order} · ${node.subtitle}',
+                style: GoogleFonts.vazirmatn(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.9),
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.coralSoft,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.vazirmatn(
+                      color: AppColors.danger,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              if (_unit != null) ...[
+                Text(
+                  'کدام درس را تمرین کنیم؟',
+                  style: GoogleFonts.vazirmatn(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.4,
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: _unit!.practiceLessons.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) {
+                      final lesson = _unit!.practiceLessons[i];
+                      return ElevatedButton(
+                        style: onLeaf,
+                        onPressed:
+                            _busy ? null : () => _pickLesson(_unit!, lesson),
+                        child: Text(
+                          '${i + 1}. ${lesson.title}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ] else
+                ElevatedButton(
+                  style: onLeaf,
+                  onPressed: _busy ? null : _startQuiz,
+                  child: _busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.leaf,
+                          ),
+                        )
+                      : const Text('شروع آزمون'),
+                ),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                style: AppTheme.chunkyStyle(
+                  face: Colors.transparent,
+                  edge: Colors.transparent,
+                  foreground: Colors.white,
+                  border: Colors.white.withValues(alpha: 0.6),
+                  textStyle: GoogleFonts.vazirmatn(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                onPressed: _busy ? null : _startStudy,
+                child: const Text('اول مطالعه کن'),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            node.title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.vazirmatn(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.ink,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            node.subtitle,
-            style: GoogleFonts.vazirmatn(
-              fontSize: 13,
-              color: AppColors.slate,
-            ),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.vazirmatn(color: AppColors.danger),
-            ),
-          ],
-          const SizedBox(height: 28),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _busy ? null : _startStudy,
-              icon: _busy
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.chrome_reader_mode_rounded),
-              label: const Text('شروع مطالعه'),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _busy ? null : _startQuiz,
-              icon: const Icon(Icons.quiz_rounded),
-              label: const Text('شروع آزمون'),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
