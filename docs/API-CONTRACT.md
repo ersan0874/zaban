@@ -72,6 +72,11 @@ POST /api/sessions/:sessionId/submit
 | `listening` | `{ options[], audioUrl?, slowAudioUrl?, hint? }` | `{ correctOption }` | `{ correctOption }` |
 | `speaking` | `{ prompt, targetText }` | `{ text }` | `{ text }` یا `{ transcript }` |
 | `image_word` | `{ options[], imageUrl?, imageLabel? }` | `{ correctOption }` | `{ correctOption }` |
+| `true_false` (فاز ۱۸) | `{ statement }` | `{ value: bool, explanation }` | `true/false` یا `{ value }` یا «صحیح/غلط» |
+| `short_answer` (فاز ۱۸) | `{ question }` | `{ texts[] }` | `"..."` یا `{ text }` (ارقام فارسی پذیرفته) |
+| `essay` (فاز ۱۸) | `{ question }` | `{ referenceAnswer, keyPoints[] }` | `"..."` یا `{ text }` — نمره با Gemini |
+
+متن‌ها ممکن است LaTeX (`$...$`) داشته باشند. هر نتیجه در پاسخ submit علاوه بر `isCorrect` شامل `score` (۰..۱)، `feedback` و `gradingStatus` (`graded|pending|ungraded`) است. درس در پاسخ نشست فیلد `notes: string[]` (نکته‌های کوتاه) دارد.
 
 نوع ناشناخته در grader → غلط؛ در Flutter → پیام امن بدون کرش.
 
@@ -154,15 +159,26 @@ POST /api/sessions/:sessionId/submit
 | GET/POST/PATCH | `/api/admin/exercises?lessonId=` | CMS تمرین |
 | GET | `/api/admin/purchases` | لاگ خریدها (فاز ۱۷) |
 
-### AI Pipeline (فاز ۱۵) — admin only
+### تولید محتوا با AI (فاز ۱۸) — admin only
 
 | Method | Path | توضیح |
 |--------|------|--------|
-| GET | `/api/admin/ai/jobs` | لیست jobها |
-| POST | `/api/admin/ai/jobs` | `{ "sourceText": "..." }` |
-| POST | `/api/admin/ai/jobs/:id/approve` | publish بعد از تأیید انسان |
+| GET | `/api/admin/content/question-types` | انواع قابل تولید + برچسب |
+| POST | `/api/admin/content/ping` | تست اتصال Gemini |
+| GET | `/api/admin/content/jobs` | لیست jobها |
+| POST | `/api/admin/content/jobs` | multipart: `files[]` (≤10، هر کدام ≤50MB)، `title`، `outputLanguage?`، `questionCounts?` (JSON)، `instructions?` |
+| GET | `/api/admin/content/jobs/:id` | جزئیات، فایل‌ها، پیشنهادها، آمار درس‌ها، مصرف توکن |
+| GET | `/api/admin/content/jobs/:id/source?from=&to=` | متن بلوک‌های منبع |
+| POST | `/api/admin/content/jobs/:id/proposals/:proposalId/select` | `{ outline? }` (ویرایش‌شده) → شروع تولید درس‌ها |
+| GET | `/api/admin/content/jobs/:id/lessons` | درس‌های پیش‌نویس + سؤال‌ها |
+| POST | `/api/admin/content/jobs/:id/retry` | اجرای دوباره مرحله یا درس‌های ناموفق |
+| POST | `/api/admin/content/jobs/:id/publish` | `{ courseTitle?, description?, domain? }` |
+| PATCH | `/api/admin/content/lessons/:id` | `{ title?, objective?, notes?, keyTerms? }` |
+| POST | `/api/admin/content/lessons/:id/regenerate` | ساخت دوباره یک درس |
+| PATCH | `/api/admin/content/exercises/:id` | `{ prompt?, content?, answer? }` — اعتبارسنجی و حذف برچسب بازبینی |
+| DELETE | `/api/admin/content/exercises/:id` | حذف سؤال |
 
-وضعیت job: `uploaded → extracting → structuring → generating → awaiting_review → published | failed`
+وضعیت job: `extracting → proposing → awaiting_structure → generating → awaiting_review → published | failed` (+ `pausedUntil` هنگام تمام شدن سهمیه)
 
 ### Billing (فاز ۱۷)
 

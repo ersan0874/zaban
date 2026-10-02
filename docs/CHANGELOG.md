@@ -2,6 +2,28 @@
 
 ثبت تغییرات مهم پروژه. جدیدترین بالا.
 
+## 2026-10-02 — فاز ۱۸: تولید محتوا با AI (Gemini)
+
+### Added
+- `src/ai/llm/` — `LlmProvider` + `GeminiProvider` (`@google/genai`): خروجی JSON Schema، rate limit، retry، fallback به مدل lite، سقف روزانه
+- `src/content/` — `ContentJob`/`SourceFile`/`Proposal`/`DraftLesson`/`DraftExercise`، صف BullMQ، API `/api/admin/content/*`
+- استخراج PDF (تکه‌ای)، عکس، Word (`mammoth`) و متن؛ بلوک‌های منبع شماره‌دار
+- `src/questions/registry/` — هر نوع سؤال یک ماژول (تولید، validate، grade)؛ انواع جدید `true_false`، `short_answer`، `essay`
+- `Lesson.notes`؛ `SessionAttempt.score/feedback/gradingStatus`؛ نمره تشریحی با Gemini + `ESSAY_AI_DAILY_LIMIT` + نمره‌دهی دوباره در پس‌زمینه
+- `src/worker.ts` و سرویس `worker` واقعی در Docker؛ volume آپلود؛ `client_max_body_size` در nginx
+- پنل ادمین: صفحه‌های `AI Content` (آپلود، انتخاب ساختار، بازبینی، انتشار، تست اتصال)
+- migrationها: `Baseline` و `ContentPipeline`؛ با `DB_SYNC=false` هنگام بالا آمدن اجرا می‌شوند
+
+### Changed
+- grader نشست‌ها async شد و از رجیستری می‌خواند؛ خروجی شامل score/feedback
+- `package-lock.json` همگام شد (`npm ci` در CI خطا می‌داد)؛ `app.controller.spec` درست شد
+
+### Removed
+- stub قبلی `AiJob` و مسیرهای `/api/admin/ai/jobs*` و صفحه `ai-jobs` (جدول `ai_jobs` دست‌نخورده می‌ماند)
+
+### Why
+کاربر خواست محتوای آموزشی از روی فایل‌های واقعی با AI ساخته شود، برای هر درسی، با سؤال‌های ماژولار و بازبینی انسانی.
+
 ## 2026-09-15 — پاس UI: نمایش قابلیت‌ها در ناوبری
 
 ### Changed (Flutter)

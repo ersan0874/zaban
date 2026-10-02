@@ -6,7 +6,7 @@
 |---|------|-----|
 | 0 | [`../AGENTS.md`](../AGENTS.md) | قانون کار ایجنت |
 | 1 | [`PROGRESS.md`](PROGRESS.md) | وضعیت واقعی: تا کجا رسیدیم |
-| 2 | [`04-ROADMAP.md`](04-ROADMAP.md) | نقشه فاز ۰ تا ۱۷ |
+| 2 | [`04-ROADMAP.md`](04-ROADMAP.md) | نقشه فاز ۰ تا ۱۸ |
 | 3 | [`phases/`](phases/) | جزئیات و DoD هر فاز |
 | 4 | [`01-RESEARCH.md`](01-RESEARCH.md) | تحقیق مکانیسم‌های یادگیری/گیمیفیکیشن |
 | 5 | [`02-PRODUCT-REQUIREMENTS.md`](02-PRODUCT-REQUIREMENTS.md) | PRD کامل قابلیت‌ها |

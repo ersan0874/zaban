@@ -10,7 +10,6 @@ import { Exercise } from '../exercises/entities/exercise.entity';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { AdminGuard } from './guards/admin.guard';
-import { AiModule } from '../ai/ai.module';
 import { BillingModule } from '../billing/billing.module';
 
 @Module({
@@ -24,7 +23,6 @@ import { BillingModule } from '../billing/billing.module';
       Lesson,
       Exercise,
     ]),
-    AiModule,
     BillingModule,
   ],
   controllers: [AdminController],

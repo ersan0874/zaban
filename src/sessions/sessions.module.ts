@@ -12,16 +12,13 @@ import { MasteryModule } from '../mastery/mastery.module';
 import { SocialModule } from '../social/social.module';
 import { ReengagementModule } from '../reengagement/reengagement.module';
 import { SessionsService } from './sessions.service';
+import { LlmModule } from '../ai/llm/llm.module';
+import { PendingGradesService } from './pending-grades.service';
 import { SessionsController } from './sessions.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      LessonSession,
-      SessionAttempt,
-      Lesson,
-      Exercise,
-    ]),
+    TypeOrmModule.forFeature([LessonSession, SessionAttempt, Lesson, Exercise]),
     ProgressModule,
     EnergyModule,
     GamificationModule,
@@ -29,9 +26,10 @@ import { SessionsController } from './sessions.controller';
     MasteryModule,
     SocialModule,
     ReengagementModule,
+    LlmModule,
   ],
   controllers: [SessionsController],
-  providers: [SessionsService],
+  providers: [SessionsService, PendingGradesService],
   exports: [SessionsService, TypeOrmModule],
 })
 export class SessionsModule {}

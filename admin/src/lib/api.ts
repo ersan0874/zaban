@@ -32,6 +32,21 @@ export async function apiFetch<T>(
   return res.json() as Promise<T>;
 }
 
+/** Multipart upload (browser sets the boundary header itself). */
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const token = getToken();
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    body: form,
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? `Request failed (${res.status})`);
+  }
+  return res.json() as Promise<T>;
+}
+
 export async function login(email: string, password: string) {
   const data = await apiFetch<{
     accessToken: string;

@@ -26,6 +26,17 @@ export class SessionAttempt {
   @Column({ type: 'boolean' })
   isCorrect: boolean;
 
+  /** 0..1 — partial credit for open-ended answers (essay). */
+  @Column({ type: 'real', nullable: true })
+  score: number | null;
+
+  @Column({ type: 'text', nullable: true })
+  feedback: string | null;
+
+  /** `pending` = AI grading failed and will be retried in the background. */
+  @Column({ type: 'varchar', length: 16, default: 'graded' })
+  gradingStatus: 'graded' | 'pending' | 'ungraded';
+
   @CreateDateColumn()
   createdAt: Date;
 

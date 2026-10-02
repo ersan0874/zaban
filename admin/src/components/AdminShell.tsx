@@ -9,7 +9,7 @@ const links = [
   { href: '/users', label: 'Users' },
   { href: '/analytics', label: 'Analytics' },
   { href: '/cms', label: 'CMS' },
-  { href: '/ai-jobs', label: 'AI Jobs' },
+  { href: '/content', label: 'AI Content' },
   { href: '/purchases', label: 'Purchases' },
 ];
 
@@ -31,7 +31,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               key={l.href}
               href={l.href}
               style={
-                pathname === l.href
+                pathname === l.href || pathname.startsWith(`${l.href}/`)
                   ? { background: '#334155', fontWeight: 600 }
                   : undefined
               }

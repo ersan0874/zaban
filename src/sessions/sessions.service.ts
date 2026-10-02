@@ -24,6 +24,10 @@ import {
 import { SessionAttempt } from './entities/session-attempt.entity';
 import { SubmitSessionDto } from './dto/submit-session.dto';
 import { gradeExercise } from './validators/exercise-grader';
+import { OpenAnswerGraderService } from '../ai/llm/open-answer-grader.service';
+import { ConfigService } from '@nestjs/config';
+import { QuestionType } from '../questions/types/question.types';
+import { asRecord } from '../questions/registry/helpers';
 
 const SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
@@ -45,6 +49,8 @@ export class SessionsService {
     private readonly masteryService: MasteryService,
     private readonly socialService: SocialService,
     private readonly reengagementService: ReengagementService,
+    private readonly openAnswerGrader: OpenAnswerGraderService,
+    private readonly config: ConfigService,
   ) {}
 
   async startSession(userId: string, lessonId: string) {
@@ -101,6 +107,7 @@ export class SessionsService {
         id: lesson.id,
         title: lesson.title,
         summary: lesson.summary,
+        notes: lesson.notes ?? [],
         estimatedMinutes: lesson.estimatedMinutes,
         unitId: lesson.unitId,
         exercises: allExercises.map((ex) =>
@@ -149,6 +156,7 @@ export class SessionsService {
         id: lesson.id,
         title: lesson.title,
         summary: lesson.summary,
+        notes: lesson.notes ?? [],
         estimatedMinutes: lesson.estimatedMinutes,
         unitId: lesson.unitId,
         exercises: allExercises.map((ex) =>
@@ -187,7 +195,11 @@ export class SessionsService {
       type: string;
       isCorrect: boolean;
       isReview: boolean;
+      score: number;
+      feedback: string | null;
+      gradingStatus: string;
     }> = [];
+    const aiGradingAllowed = await this.canUseAiGrading(userId);
 
     const attempts: SessionAttempt[] = [];
     const reviewSet = new Set(reviewIds);
@@ -200,17 +212,34 @@ export class SessionsService {
         );
       }
 
-      const isCorrect = gradeExercise(
+      const grade = await gradeExercise(
         exercise.type,
         exercise.answer,
         item.response,
+        {
+          prompt: exercise.prompt,
+          content: asRecord(exercise.content),
+          openAnswerGrader: aiGradingAllowed
+            ? this.openAnswerGrader
+            : undefined,
+        },
       );
+      if (grade.status === 'pending' && !aiGradingAllowed) {
+        // Over the daily AI-grading cap: show the model answer instead.
+        grade.status = 'ungraded';
+        const reference = asRecord(exercise.answer).referenceAnswer;
+        grade.feedback = typeof reference === 'string' ? reference : null;
+      }
+      const isCorrect = grade.correct;
 
       results.push({
         exerciseId: exercise.id,
         type: exercise.type,
         isCorrect,
         isReview: reviewSet.has(exercise.id),
+        score: grade.score,
+        feedback: grade.feedback ?? null,
+        gradingStatus: grade.status,
       });
 
       attempts.push(
@@ -219,6 +248,9 @@ export class SessionsService {
           exerciseId: exercise.id,
           response: item.response,
           isCorrect,
+          score: grade.score,
+          feedback: grade.feedback ?? null,
+          gradingStatus: grade.status,
         }),
       );
     }
@@ -308,6 +340,23 @@ export class SessionsService {
       mastery,
       feed,
     };
+  }
+
+  /** Caps AI-graded essay answers per user per day to protect the free quota. */
+  private async canUseAiGrading(userId: string): Promise<boolean> {
+    const limit = Number(this.config.get('ESSAY_AI_DAILY_LIMIT', 50));
+    const since = new Date();
+    since.setHours(0, 0, 0, 0);
+    const used = await this.attemptRepository
+      .createQueryBuilder('attempt')
+      .innerJoin('attempt.session', 'session')
+      .innerJoin('attempt.exercise', 'exercise')
+      .where('session.userId = :userId', { userId })
+      .andWhere('exercise.type = :type', { type: QuestionType.ESSAY })
+      .andWhere("attempt.gradingStatus = 'graded'")
+      .andWhere('attempt.createdAt >= :since', { since })
+      .getCount();
+    return used < limit;
   }
 
   private toClientExercise(ex: Exercise, isReview = false) {

@@ -26,6 +26,10 @@ export class Lesson {
   @Column({ type: 'text', nullable: true })
   summary: string | null;
 
+  /** Short bullet-style teaching notes shown before practice (Markdown + LaTeX). */
+  @Column({ type: 'jsonb', nullable: true })
+  notes: string[] | null;
+
   @Column({ type: 'int' })
   order: number;
 
