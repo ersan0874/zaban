@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LessonSession } from './entities/lesson-session.entity';
+import { PathMilestone } from '../path/entities/path-milestone.entity';
 import { SessionAttempt } from './entities/session-attempt.entity';
 import { Lesson } from '../lessons/entities/lesson.entity';
 import { Exercise } from '../exercises/entities/exercise.entity';
@@ -20,7 +21,13 @@ import { LateGradesController } from './late-grades.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([LessonSession, SessionAttempt, Lesson, Exercise]),
+    TypeOrmModule.forFeature([
+      LessonSession,
+      SessionAttempt,
+      Lesson,
+      Exercise,
+      PathMilestone,
+    ]),
     ProgressModule,
     EnergyModule,
     GamificationModule,

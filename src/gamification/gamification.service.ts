@@ -285,6 +285,20 @@ export class GamificationService {
     });
   }
 
+  /** XP and streak freezes won outside a lesson (path chests). */
+  async grantRewards(
+    userId: string,
+    rewards: { xp?: number; streakFreeze?: number },
+  ) {
+    await this.dataSource.transaction(async (manager) => {
+      const profile = await this.loadProfileForUpdate(manager, userId);
+      profile.xp += Math.max(0, rewards.xp ?? 0);
+      profile.streakFreezeCount += Math.max(0, rewards.streakFreeze ?? 0);
+      await manager.save(profile);
+    });
+    return this.getSnapshot(userId);
+  }
+
   async pinBadge(userId: string, badgeKey: string, pinned: boolean) {
     const badge = await this.badgeRepository.findOne({
       where: { userId, badgeKey },

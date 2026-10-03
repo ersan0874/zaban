@@ -18,7 +18,9 @@
 | PATCH | `/api/auth/me/settings` | Bearer | اعلان‌ها |
 | GET | `/api/courses` | خیر | لیست دوره‌های منتشرشده |
 | GET | `/api/courses/:id` | خیر | دوره + sections/units |
-| GET | `/api/courses/:id/path` | Bearer | نودهای مسیر (قفل checkpoint-aware) |
+| GET | `/api/courses/:id/path` | Bearer | `nodes` (یونیت‌ها) + `items`: ایستگاه‌های مسیر (`lesson`/`exam`/`chest` با `status`) |
+| POST | `/api/courses/:id/path/exams/:position/sessions` | Bearer | شروع آزمون جامع بعد از درس شماره‌ی `position` (پاسخ مثل شروع درس) |
+| POST | `/api/courses/:id/path/chests/:position/open` | Bearer | باز کردن جعبه‌ی مسیر؛ `{ rewards: { energy, gems, xp, streakFreeze } }`؛ ۴۰۹ اگر قبلاً باز شده |
 | GET | `/api/units/:unitId` | خیر | درس‌ها + واژه‌های مطالعه |
 | GET | `/api/lessons/:lessonId` | خیر | تمرین‌ها؛ `?includeAnswers=1` برای جواب |
 | GET | `/api/gamification` | Bearer | استریک، XP، قلب، کوئست، نشان، لوت |

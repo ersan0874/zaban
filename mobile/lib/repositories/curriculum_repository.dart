@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:zaban/models/path_item_model.dart';
 import 'package:zaban/models/path_node_model.dart';
 import 'package:zaban/models/word_model.dart';
 import 'package:zaban/services/api_client.dart';
@@ -115,7 +116,12 @@ class CurriculumRepository {
     }
   }
 
-  Future<({CourseSummary course, List<PathNodeModel> nodes})> getPath(
+  Future<
+      ({
+        CourseSummary course,
+        List<PathNodeModel> nodes,
+        List<PathItemModel> items,
+      })> getPath(
     String courseId,
   ) async {
     try {
@@ -130,7 +136,27 @@ class CurriculumRepository {
           .map(
               (e) => PathNodeModel.fromApi(Map<String, dynamic>.from(e as Map)))
           .toList();
-      return (course: course, nodes: nodes);
+      final items = (data['items'] as List? ?? [])
+          .map(
+              (e) => PathItemModel.fromApi(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      return (course: course, nodes: nodes, items: items);
+    } on DioException catch (e) {
+      throw ApiException(ApiClient.messageFrom(e),
+          statusCode: e.response?.statusCode);
+    }
+  }
+
+  /// Opens the reward chest after lesson [position] of the path.
+  Future<ChestRewards> openChest(String courseId, int position) async {
+    try {
+      final res = await _client.dio.post<Map<String, dynamic>>(
+        '/courses/$courseId/path/chests/$position/open',
+      );
+      final rewards = res.data?['rewards'];
+      return rewards is Map
+          ? ChestRewards.fromJson(Map<String, dynamic>.from(rewards))
+          : const ChestRewards();
     } on DioException catch (e) {
       throw ApiException(ApiClient.messageFrom(e),
           statusCode: e.response?.statusCode);

@@ -520,7 +520,8 @@ class _QuizScreenState extends State<QuizScreen> {
     final correct = result?.correctCount ?? 0;
     final total = result?.totalCount ?? widget.questions.length;
     final percent = result?.scorePercent ?? 0;
-    final passed = percent >= 70;
+    final examPassed = result?.examPassed;
+    final passed = examPassed ?? percent >= 70;
     final comboEnergy = (result?.comboRewards ?? const <ComboReward>[])
         .fold<int>(0, (s, r) => s + r.energyAwarded);
 
@@ -541,7 +542,11 @@ class _QuizScreenState extends State<QuizScreen> {
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        passed ? 'درس تمام شد!' : 'خوب تمرین کردی!',
+                        examPassed == null
+                            ? (passed ? 'درس تمام شد!' : 'خوب تمرین کردی!')
+                            : (passed
+                                ? 'آزمون را قبول شدی!'
+                                : 'هنوز قبول نشدی'),
                         style: GoogleFonts.vazirmatn(
                           fontSize: 28,
                           fontWeight: FontWeight.w900,
@@ -550,9 +555,11 @@ class _QuizScreenState extends State<QuizScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        passed
-                            ? '$correct از $total پاسخ درست بود'
-                            : '$correct از $total درست؛ یک بار دیگر امتحان کن',
+                        examPassed == false
+                            ? '$correct از $total درست؛ برای قبولی ۷۰٪ لازم است و تا قبول نشوی درس بعدی باز نمی‌شود'
+                            : passed
+                                ? '$correct از $total پاسخ درست بود'
+                                : '$correct از $total درست؛ یک بار دیگر امتحان کن',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.vazirmatn(
                           fontSize: 15,

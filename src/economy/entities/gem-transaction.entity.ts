@@ -15,6 +15,7 @@ export enum GemTxnReason {
   PURCHASE = 'purchase',
   IAP = 'iap',
   ADMIN = 'admin',
+  CHEST = 'chest',
 }
 
 @Entity('gem_transactions')

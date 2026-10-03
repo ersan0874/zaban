@@ -11,6 +11,7 @@ import { UsersModule } from './users/users.module';
 import { CoursesModule } from './courses/courses.module';
 import { LessonsModule } from './lessons/lessons.module';
 import { ExercisesModule } from './exercises/exercises.module';
+import { PathModule } from './path/path.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { SectionsModule } from './sections/sections.module';
 import { UnitsModule } from './units/units.module';
@@ -81,6 +82,7 @@ import { User } from './users/entities/user.entity';
     LessonsModule,
     ExercisesModule,
     SessionsModule,
+    PathModule,
     SectionsModule,
     UnitsModule,
     WordsModule,

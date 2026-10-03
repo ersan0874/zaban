@@ -18,6 +18,12 @@ export type SessionStepRecord = {
   gradingStatus: 'graded' | 'pending' | 'ungraded';
 };
 
+export enum LessonSessionKind {
+  LESSON = 'lesson',
+  /** Review exam on the path: only `reviewExerciseIds`, no notes. */
+  EXAM = 'exam',
+}
+
 export enum LessonSessionStatus {
   ACTIVE = 'active',
   COMPLETED = 'completed',
@@ -37,6 +43,19 @@ export class LessonSession {
 
   @Column({ type: 'varchar', length: 32, default: LessonSessionStatus.ACTIVE })
   status: LessonSessionStatus;
+
+  @Column({ type: 'varchar', length: 16, default: LessonSessionKind.LESSON })
+  kind: LessonSessionKind;
+
+  /** Exams: the course and the path position they belong to. */
+  @Column({ type: 'uuid', nullable: true })
+  courseId: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  examPosition: number | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  examTitle: string | null;
 
   @Column({ type: 'timestamptz' })
   expiresAt: Date;

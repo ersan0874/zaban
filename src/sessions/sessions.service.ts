@@ -19,9 +19,15 @@ import { ReengagementService } from '../reengagement/reengagement.service';
 import { LessonKind } from '../lessons/entities/lesson.entity';
 import {
   LessonSession,
+  LessonSessionKind,
   LessonSessionStatus,
   SessionStepRecord,
 } from './entities/lesson-session.entity';
+import {
+  PathMilestone,
+  PathMilestoneKind,
+} from '../path/entities/path-milestone.entity';
+import { EXAM_PASS_PERCENT } from '../path/path.config';
 import { SessionAttempt } from './entities/session-attempt.entity';
 import { SubmitSessionDto } from './dto/submit-session.dto';
 import { StepSessionDto } from './dto/step-session.dto';
@@ -46,6 +52,8 @@ export class SessionsService {
     private readonly lessonRepository: Repository<Lesson>,
     @InjectRepository(Exercise)
     private readonly exerciseRepository: Repository<Exercise>,
+    @InjectRepository(PathMilestone)
+    private readonly milestoneRepository: Repository<PathMilestone>,
     private readonly progressService: ProgressService,
     private readonly energyService: EnergyService,
     private readonly gamificationService: GamificationService,
@@ -117,6 +125,65 @@ export class SessionsService {
     };
   }
 
+  /**
+   * A review exam on the path: questions picked from earlier lessons. The
+   * session hangs off the last covered lesson but holds only these questions.
+   */
+  async startExamSession(
+    userId: string,
+    exam: {
+      courseId: string;
+      position: number;
+      title: string;
+      anchorLesson: Lesson;
+      exercises: Exercise[];
+    },
+  ) {
+    if (exam.exercises.length === 0) {
+      throw new BadRequestException('This exam has no questions yet');
+    }
+    await this.reengagementService.assertCanStartLesson(
+      userId,
+      exam.anchorLesson,
+    );
+    const energy = await this.energyService.assertCanStart(userId);
+
+    const session = await this.sessionRepository.save(
+      this.sessionRepository.create({
+        userId,
+        lessonId: exam.anchorLesson.id,
+        kind: LessonSessionKind.EXAM,
+        courseId: exam.courseId,
+        examPosition: exam.position,
+        examTitle: exam.title,
+        status: LessonSessionStatus.ACTIVE,
+        expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+        correctCount: 0,
+        totalCount: exam.exercises.length,
+        reviewExerciseIds: exam.exercises.map((ex) => ex.id),
+        completedAt: null,
+      }),
+    );
+
+    return {
+      sessionId: session.id,
+      status: session.status,
+      expiresAt: session.expiresAt,
+      reviewInjectedCount: 0,
+      energy,
+      exam: { position: exam.position, passPercent: EXAM_PASS_PERCENT },
+      lesson: {
+        id: exam.anchorLesson.id,
+        title: exam.title,
+        summary: null,
+        notes: [],
+        estimatedMinutes: exam.exercises.length,
+        unitId: exam.anchorLesson.unitId,
+        exercises: exam.exercises.map((ex) => this.toClientExercise(ex)),
+      },
+    };
+  }
+
   async getSession(userId: string, sessionId: string) {
     const session = await this.requireOwnedSession(userId, sessionId);
     await this.expireIfNeeded(session);
@@ -129,16 +196,21 @@ export class SessionsService {
       throw new NotFoundException('Lesson not found');
     }
 
-    const lessonExercises = (lesson.exercises ?? [])
-      .slice()
-      .sort((a, b) => a.order - b.order);
+    const isExam = session.kind === LessonSessionKind.EXAM;
+    const lessonExercises = isExam
+      ? []
+      : (lesson.exercises ?? []).slice().sort((a, b) => a.order - b.order);
 
     const reviewIds = session.reviewExerciseIds ?? [];
-    const reviewExercises =
+    const found =
       reviewIds.length === 0
         ? []
         : await this.exerciseRepository.find({ where: { id: In(reviewIds) } });
-    const reviewSet = new Set(reviewIds);
+    // Keep the order the questions were dealt in.
+    const reviewExercises = reviewIds
+      .map((id) => found.find((ex) => ex.id === id))
+      .filter((ex): ex is Exercise => !!ex);
+    const reviewSet = new Set(isExam ? [] : reviewIds);
     const allExercises = [...lessonExercises, ...reviewExercises];
 
     return {
@@ -148,12 +220,12 @@ export class SessionsService {
       correctCount: session.correctCount,
       totalCount: session.totalCount,
       completedAt: session.completedAt,
-      reviewInjectedCount: reviewIds.length,
+      reviewInjectedCount: isExam ? 0 : reviewIds.length,
       lesson: {
         id: lesson.id,
-        title: lesson.title,
-        summary: lesson.summary,
-        notes: lesson.notes ?? [],
+        title: isExam ? (session.examTitle ?? lesson.title) : lesson.title,
+        summary: isExam ? null : lesson.summary,
+        notes: isExam ? [] : (lesson.notes ?? []),
         estimatedMinutes: lesson.estimatedMinutes,
         unitId: lesson.unitId,
         exercises: allExercises.map((ex) =>
@@ -184,6 +256,9 @@ export class SessionsService {
       }
       key = exercise.id;
     } else if (dto.page) {
+      if (session.kind === LessonSessionKind.EXAM) {
+        throw new BadRequestException('An exam has no note pages');
+      }
       const index = Number(dto.page.split(':')[1]);
       const lesson = await this.lessonRepository.findOne({
         where: { id: session.lessonId },
@@ -379,18 +454,26 @@ export class SessionsService {
       session.id,
     );
 
-    const mastery = await this.masteryService.onLessonCompleted(
-      userId,
-      session.lessonId,
-      scorePercent,
-    );
+    const isExam = session.kind === LessonSessionKind.EXAM;
+    const mastery = isExam
+      ? await this.examMastery(userId, session.courseId)
+      : await this.masteryService.onLessonCompleted(
+          userId,
+          session.lessonId,
+          scorePercent,
+        );
+    const exam = isExam
+      ? await this.recordExam(userId, session, scorePercent)
+      : null;
 
     const lesson = await this.lessonRepository.findOne({
       where: { id: session.lessonId },
     });
     const feed = lesson
       ? await this.socialService.publishLessonComplete(userId, {
-          lessonTitle: lesson.title,
+          lessonTitle: isExam
+            ? (session.examTitle ?? lesson.title)
+            : lesson.title,
           scorePercent,
           xpGained: gamification.xpGained,
         })
@@ -419,7 +502,45 @@ export class SessionsService {
       gamification,
       economy,
       mastery,
+      exam,
       feed,
+    };
+  }
+
+  private async examMastery(userId: string, courseId: string | null) {
+    const masteryScore = courseId
+      ? await this.masteryService.recomputeMastery(userId, courseId)
+      : null;
+    return { checkpoint: null, masteryScore, courseId };
+  }
+
+  /** Keeps the best score; passing once unlocks the path for good. */
+  private async recordExam(
+    userId: string,
+    session: LessonSession,
+    scorePercent: number,
+  ) {
+    const passed = scorePercent >= EXAM_PASS_PERCENT;
+    const position = session.examPosition ?? 0;
+    if (session.courseId) {
+      const where = {
+        userId,
+        courseId: session.courseId,
+        kind: PathMilestoneKind.EXAM,
+        position,
+      };
+      const row =
+        (await this.milestoneRepository.findOne({ where })) ??
+        this.milestoneRepository.create({ ...where, scorePercent: 0 });
+      row.scorePercent = Math.max(row.scorePercent ?? 0, scorePercent);
+      row.done = row.done || passed;
+      await this.milestoneRepository.save(row);
+    }
+    return {
+      position,
+      passed,
+      scorePercent,
+      passPercent: EXAM_PASS_PERCENT,
     };
   }
 
@@ -477,7 +598,8 @@ export class SessionsService {
     });
     const inSession =
       !!exercise &&
-      (exercise.lessonId === session.lessonId ||
+      ((session.kind !== LessonSessionKind.EXAM &&
+        exercise.lessonId === session.lessonId) ||
         (session.reviewExerciseIds ?? []).includes(exercise.id));
     if (!exercise || !inSession) {
       throw new BadRequestException(
