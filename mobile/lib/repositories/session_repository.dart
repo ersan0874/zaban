@@ -120,7 +120,11 @@ class SessionSubmitResult {
     this.xpGained = 0,
     this.streakBefore = 0,
     this.streakAfter = 0,
+    this.examPassed,
   });
+
+  /// Set for a review exam: whether the learner reached the pass mark.
+  final bool? examPassed;
 
   final int correctCount;
   final int totalCount;
@@ -155,6 +159,7 @@ class SessionSubmitResult {
       xpGained: gam['xpGained'] as int? ?? 0,
       streakBefore: gam['streakBefore'] as int? ?? 0,
       streakAfter: gam['streakAfter'] as int? ?? 0,
+      examPassed: json['exam'] is Map ? json['exam']['passed'] as bool? : null,
     );
   }
 }
@@ -191,6 +196,24 @@ class SessionRepository {
     try {
       final res = await _client.dio.post<Map<String, dynamic>>(
         '/lessons/$lessonId/sessions',
+      );
+      return LessonSessionPayload.fromJson(res.data ?? {});
+    } on DioException catch (e) {
+      throw ApiException(
+        ApiClient.messageFrom(e),
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  /// Starts the review exam after lesson [position] of the course path.
+  Future<LessonSessionPayload> startExamSession(
+    String courseId,
+    int position,
+  ) async {
+    try {
+      final res = await _client.dio.post<Map<String, dynamic>>(
+        '/courses/$courseId/path/exams/$position/sessions',
       );
       return LessonSessionPayload.fromJson(res.data ?? {});
     } on DioException catch (e) {

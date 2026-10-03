@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:zaban/models/path_node_model.dart';
+import 'package:zaban/models/path_item_model.dart';
 import 'package:zaban/repositories/curriculum_repository.dart';
 import 'package:zaban/repositories/economy_repository.dart';
 import 'package:zaban/repositories/energy_repository.dart';
@@ -41,7 +41,11 @@ class _LearningPathScreenState extends State<LearningPathScreen>
   bool _startingDiagnostic = false;
   String? _error;
   String? _courseTitle;
-  List<PathNodeModel> _nodes = const [];
+  String? _courseId;
+  List<PathItemModel> _items = const [];
+
+  /// The stop the learner is on; the path scrolls to it after loading.
+  final _currentKey = GlobalKey();
   EnergySnapshot? _energy;
   GamificationSnapshot? _gami;
   int _gems = 0;
@@ -102,7 +106,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
         setState(() {
           _loading = false;
           _error = 'هنوز دوره‌ای منتشر نشده است';
-          _nodes = const [];
+          _items = const [];
           _energy = energy;
           _gami = gami;
           _gems = gems;
@@ -114,12 +118,23 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       if (!mounted) return;
       setState(() {
         _courseTitle = path.course.title;
-        _nodes = path.nodes;
+        _courseId = path.course.id;
+        _items = path.items;
         _energy = energy;
         _gami = gami;
         _gems = gems;
         _reentry = reentry;
         _loading = false;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _currentKey.currentContext;
+        if (target != null && mounted) {
+          Scrollable.ensureVisible(
+            target,
+            alignment: 0.35,
+            duration: const Duration(milliseconds: 350),
+          );
+        }
       });
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -180,39 +195,79 @@ class _LearningPathScreenState extends State<LearningPathScreen>
     }
   }
 
-  void _onNodeTap(PathNodeModel node) {
-    if (node.status == PathNodeStatus.locked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.inkSoft,
-          content: Text(
-            'این یونیت هنوز قفل است',
-            style: GoogleFonts.vazirmatn(),
-            textAlign: TextAlign.center,
-          ),
+  void _toast(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.inkSoft,
+        content: Text(
+          text,
+          style: GoogleFonts.vazirmatn(),
+          textAlign: TextAlign.center,
         ),
+      ),
+    );
+  }
+
+  void _onItemTap(PathItemModel item) {
+    if (item.kind == PathItemKind.chest) {
+      if (item.isCompleted) {
+        _toast('این جعبه را قبلاً باز کرده‌ای');
+      } else if (item.isLocked) {
+        _toast('درس‌های قبل از این جعبه را تمام کن تا باز شود');
+      } else {
+        _openChest(item);
+      }
+      return;
+    }
+    if (item.isLocked) {
+      _toast(
+        item.kind == PathItemKind.exam
+            ? 'این آزمون بعد از تمام شدن درس‌های قبلش باز می‌شود'
+            : 'این درس هنوز قفل است؛ اول مرحله‌های قبلی را تمام کن',
       );
       return;
     }
-    _showUnitSheet(node);
-  }
-
-  void _showUnitSheet(PathNodeModel node) {
+    final courseId = _courseId;
+    if (courseId == null) return;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: AppColors.ink.withValues(alpha: 0.45),
-      builder: (context) => _UnitActionSheet(
-        node: node,
+      builder: (context) => _ItemSheet(
+        item: item,
+        courseId: courseId,
+        // Energy, hearts and progress change inside a lesson; refresh the
+        // header and path once the learner comes back, however they left.
+        onLessonClosed: () {
+          if (mounted) _loadPath();
+        },
       ),
     );
   }
 
+  Future<void> _openChest(PathItemModel item) async {
+    final courseId = _courseId;
+    if (courseId == null) return;
+    try {
+      final rewards = await _curriculum.openChest(courseId, item.position);
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (_) => _ChestDialog(rewards: rewards),
+      );
+    } on ApiException catch (e) {
+      if (mounted) _toast(e.message);
+    } catch (_) {
+      if (mounted) _toast('باز کردن جعبه ناموفق بود');
+    }
+    if (mounted) await _loadPath();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final nodes = _nodes;
+    final items = _items;
 
     return Scaffold(
       backgroundColor: AppColors.snow,
@@ -291,7 +346,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
                 children: [
                   _UnitBanner(
                     courseTitle: _courseTitle ?? 'مسیر یادگیری',
-                    nodes: nodes,
+                    items: items,
                   ),
                   if (_reentry?.requiresDiagnostic == true) ...[
                     const SizedBox(height: 12),
@@ -304,14 +359,14 @@ class _LearningPathScreenState extends State<LearningPathScreen>
                 ],
               ),
             ),
-            Expanded(child: _buildBody(nodes)),
+            Expanded(child: _buildBody(items)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBody(List<PathNodeModel> nodes) {
+  Widget _buildBody(List<PathItemModel> items) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -347,7 +402,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
         ),
       );
     }
-    if (nodes.isEmpty) {
+    if (items.isEmpty) {
       return Center(
         child: Text(
           'مسیری برای نمایش نیست',
@@ -356,36 +411,54 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       );
     }
 
-    // Nodes sway gently left and right like a winding trail.
+    // A small heading wherever a new unit starts, then its stops.
+    final rows = <Object>[];
+    String? unitId;
+    for (final item in items) {
+      if (item.unitId != unitId) {
+        unitId = item.unitId;
+        rows.add(item.unitTitle);
+      }
+      rows.add(item);
+    }
+
+    // Stops sway gently left and right like a winding trail.
     const swing = [0.0, -0.45, -0.75, -0.45, 0.0, 0.45, 0.75, 0.45];
-    const rowHeight = 104.0;
-    const bubbleSpace = 44.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final amplitude = math.min(constraints.maxWidth * 0.22, 110.0);
-        return ListView.builder(
-          padding: const EdgeInsets.only(bottom: 32),
-          itemCount: nodes.length,
-          itemBuilder: (context, index) {
-            final node = nodes[index];
-            final active = node.status == PathNodeStatus.active;
-            final dx = swing[index % swing.length] * amplitude;
-            return SizedBox(
-              height: rowHeight + (active ? bubbleSpace : 0),
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Transform.translate(
-                  offset: Offset(dx, 0),
-                  child: _PathNode(
-                    node: node,
-                    pulse: active ? _pulseController : null,
-                    onTap: () => _onNodeTap(node),
+        final amplitude = math.min(constraints.maxWidth * 0.2, 100.0);
+        var stop = 0;
+        final offsets = [
+          for (final row in rows)
+            row is PathItemModel ? swing[stop++ % swing.length] : 0.0,
+        ];
+        final current = items.cast<PathItemModel?>().firstWhere(
+              (i) => i!.isActive && i.kind != PathItemKind.chest,
+              orElse: () => null,
+            );
+        // Built all at once (a course has a few dozen stops) so the path
+        // can scroll to the current one.
+        return ListView(
+          padding: const EdgeInsets.only(top: 8, bottom: 32),
+          children: [
+            for (var index = 0; index < rows.length; index++)
+              if (rows[index] case final String title)
+                _UnitHeading(title: title)
+              else if (rows[index] case final PathItemModel item)
+                Padding(
+                  key: identical(item, current) ? _currentKey : null,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Transform.translate(
+                    offset: Offset(offsets[index] * amplitude, 0),
+                    child: _PathStop(
+                      item: item,
+                      pulse: item.isActive ? _pulseController : null,
+                      onTap: () => _onItemTap(item),
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+          ],
         );
       },
     );
@@ -393,17 +466,17 @@ class _LearningPathScreenState extends State<LearningPathScreen>
 }
 
 class _UnitBanner extends StatelessWidget {
-  const _UnitBanner({required this.courseTitle, required this.nodes});
+  const _UnitBanner({required this.courseTitle, required this.items});
 
   final String courseTitle;
-  final List<PathNodeModel> nodes;
+  final List<PathItemModel> items;
 
   @override
   Widget build(BuildContext context) {
-    final done =
-        nodes.where((n) => n.status == PathNodeStatus.completed).length;
-    final current = nodes.cast<PathNodeModel?>().firstWhere(
-          (n) => n!.status == PathNodeStatus.active,
+    final lessons = items.where((i) => i.kind == PathItemKind.lesson).toList();
+    final done = lessons.where((i) => i.isCompleted).length;
+    final current = items.cast<PathItemModel?>().firstWhere(
+          (i) => i!.isActive && i.kind != PathItemKind.chest,
           orElse: () => null,
         );
     return Container(
@@ -425,9 +498,9 @@ class _UnitBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    nodes.isEmpty
+                    lessons.isEmpty
                         ? 'مسیر یادگیری'
-                        : 'یونیت ${current?.order ?? done} از ${nodes.length}',
+                        : '$done از ${lessons.length} درس تمام شده',
                     style: GoogleFonts.vazirmatn(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
@@ -436,7 +509,7 @@ class _UnitBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    current?.title ?? courseTitle,
+                    current?.unitTitle ?? courseTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.vazirmatn(
@@ -607,267 +680,300 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-class _PathNode extends StatelessWidget {
-  const _PathNode({
-    required this.node,
+class _UnitHeading extends StatelessWidget {
+  const _UnitHeading({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: AppColors.line, thickness: 2)),
+          const SizedBox(width: 10),
+          Flexible(
+            flex: 3,
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.vazirmatn(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.slate,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Divider(color: AppColors.line, thickness: 2)),
+        ],
+      ),
+    );
+  }
+}
+
+/// A stop on the path: a round coin with its name underneath.
+class _PathStop extends StatelessWidget {
+  const _PathStop({
+    required this.item,
     required this.onTap,
     this.pulse,
   });
 
-  final PathNodeModel node;
+  final PathItemModel item;
   final VoidCallback onTap;
   final Animation<double>? pulse;
 
   @override
   Widget build(BuildContext context) {
-    final locked = node.status == PathNodeStatus.locked;
-    final active = node.status == PathNodeStatus.active;
-    final completed = node.status == PathNodeStatus.completed;
+    final locked = item.isLocked;
+    final completed = item.isCompleted;
 
-    final face = locked
-        ? AppColors.line
-        : completed
-            ? AppColors.sun
-            : AppColors.leaf;
-    final edge = locked
-        ? AppColors.lineDark
-        : completed
-            ? AppColors.sunDark
-            : AppColors.leafDark;
+    final (Color face, Color edge, IconData icon) = switch (item.kind) {
+      _ when locked => (
+          AppColors.line,
+          AppColors.lineDark,
+          item.kind == PathItemKind.chest
+              ? Icons.card_giftcard_rounded
+              : Icons.lock_rounded,
+        ),
+      PathItemKind.lesson => completed
+          ? (AppColors.sun, AppColors.sunDark, Icons.check_rounded)
+          : (AppColors.leaf, AppColors.leafDark, Icons.star_rounded),
+      PathItemKind.exam => completed
+          ? (AppColors.sun, AppColors.sunDark, Icons.emoji_events_rounded)
+          : (AppColors.grape, AppColors.grapeDark, Icons.emoji_events_rounded),
+      PathItemKind.chest => completed
+          ? (AppColors.line, AppColors.lineDark, Icons.check_rounded)
+          : (AppColors.flame, AppColors.flameDark, Icons.card_giftcard_rounded),
+    };
+    final size = item.kind == PathItemKind.lesson ? 72.0 : 64.0;
 
     Widget coin = Container(
-      width: 72,
-      height: 72,
+      width: size,
+      height: size,
       padding: const EdgeInsets.only(bottom: 7),
       decoration: BoxDecoration(color: edge, shape: BoxShape.circle),
       child: Container(
         decoration: BoxDecoration(color: face, shape: BoxShape.circle),
         child: Icon(
-          locked
-              ? Icons.lock_rounded
-              : completed
-                  ? Icons.check_rounded
-                  : Icons.star_rounded,
-          color: locked ? AppColors.locked : Colors.white,
-          size: 34,
+          icon,
+          color: locked || (completed && item.kind == PathItemKind.chest)
+              ? AppColors.locked
+              : Colors.white,
+          size: size * 0.46,
         ),
       ),
     );
 
-    if (active) {
+    if (item.isActive) {
+      final ring = Container(
+        width: size + 22,
+        height: size + 22,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: face.withValues(alpha: 0.25),
+            width: 8,
+          ),
+        ),
+      );
       coin = Stack(
         alignment: Alignment.center,
-        clipBehavior: Clip.none,
         children: [
-          Container(
-            width: 94,
-            height: 94,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.leafSoft, width: 8),
+          if (pulse == null)
+            ring
+          else
+            AnimatedBuilder(
+              animation: pulse!,
+              builder: (context, child) => Transform.scale(
+                scale: 1 + 0.06 * pulse!.value,
+                child: child,
+              ),
+              child: ring,
             ),
-          ),
           coin,
-          Positioned(
-            top: -44,
-            child: _StartBubble(pulse: pulse),
-          ),
         ],
+      );
+    } else {
+      coin = SizedBox(
+        width: size + 22,
+        height: size + 22,
+        child: Center(child: coin),
       );
     }
 
+    final label = switch (item.kind) {
+      PathItemKind.lesson => item.title,
+      PathItemKind.exam => 'آزمون جامع',
+      PathItemKind.chest => completed ? 'جعبه باز شد' : 'جعبه‌ی جایزه',
+    };
+
     return Semantics(
       button: true,
-      label: '${node.title} — یونیت ${node.order}',
+      label: switch (item.kind) {
+        PathItemKind.lesson => 'درس ${item.number}: ${item.title}',
+        PathItemKind.exam => item.title,
+        PathItemKind.chest => label,
+      },
       child: GestureDetector(
         onTap: onTap,
-        child: coin,
-      ),
-    );
-  }
-}
-
-class _StartBubble extends StatelessWidget {
-  const _StartBubble({this.pulse});
-
-  final Animation<double>? pulse;
-
-  @override
-  Widget build(BuildContext context) {
-    final bubble = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.snow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.line, width: 2),
-      ),
-      child: Text(
-        'شروع',
-        style: GoogleFonts.vazirmatn(
-          fontSize: 14,
-          fontWeight: FontWeight.w900,
-          color: AppColors.leaf,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            coin,
+            const SizedBox(height: 4),
+            SizedBox(
+              width: 170,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.vazirmatn(
+                  fontSize: 13,
+                  height: 1.35,
+                  fontWeight: item.isActive ? FontWeight.w900 : FontWeight.w700,
+                  color: locked
+                      ? AppColors.locked
+                      : item.isActive
+                          ? AppColors.ink
+                          : AppColors.slate,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
-    if (pulse == null) return bubble;
-    return AnimatedBuilder(
-      animation: pulse!,
-      builder: (context, child) => Transform.translate(
-        offset: Offset(0, -4 * pulse!.value),
-        child: child,
-      ),
-      child: bubble,
-    );
   }
 }
 
-class _UnitActionSheet extends StatefulWidget {
-  const _UnitActionSheet({required this.node});
+/// Start sheet for a lesson or a review exam.
+class _ItemSheet extends StatefulWidget {
+  const _ItemSheet({
+    required this.item,
+    required this.courseId,
+    required this.onLessonClosed,
+  });
 
-  final PathNodeModel node;
+  final PathItemModel item;
+  final String courseId;
+  final VoidCallback onLessonClosed;
 
   @override
-  State<_UnitActionSheet> createState() => _UnitActionSheetState();
+  State<_ItemSheet> createState() => _ItemSheetState();
 }
 
-class _UnitActionSheetState extends State<_UnitActionSheet> {
+class _ItemSheetState extends State<_ItemSheet> {
   final _curriculum = CurriculumRepository();
   final _sessions = SessionRepository();
   bool _busy = false;
   String? _error;
 
-  /// Set when the unit has several lessons and the learner must pick one.
-  UnitDetail? _unit;
+  bool get _isExam => widget.item.kind == PathItemKind.exam;
 
-  Future<void> _startStudy() async {
+  Future<void> _run(Future<void> Function() action, String failure) async {
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      final unit = await _curriculum.getUnit(widget.node.id);
-      if (!mounted) return;
-      Navigator.pop(context);
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => WordStudyScreen(
-            unitTitle: unit.title,
-            words: unit.words,
+      await action();
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = e.message;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = failure;
+        });
+      }
+    }
+  }
+
+  Future<void> _start() => _run(() async {
+        final item = widget.item;
+        // Captured first: this sheet is closed before the lesson ends.
+        final onClosed = widget.onLessonClosed;
+        final session = _isExam
+            ? await _sessions.startExamSession(widget.courseId, item.position)
+            : await _sessions.startLessonSession(item.lessonId!);
+        if (!mounted) return;
+        final navigator = Navigator.of(context);
+        navigator.pop();
+        await navigator.push(
+          MaterialPageRoute<void>(
+            builder: (_) => QuizScreen(
+              unitTitle: session.lessonTitle,
+              sessionId: session.sessionId,
+              questions: session.exercises,
+              notes: session.notes,
+              energy: session.energy,
+            ),
           ),
-        ),
-      );
-    } on ApiException catch (e) {
-      setState(() {
-        _busy = false;
-        _error = e.message;
-      });
-    } catch (_) {
-      setState(() {
-        _busy = false;
-        _error = 'بارگذاری مطالعه ناموفق بود';
-      });
-    }
-  }
+        );
+        onClosed();
+      }, _isExam ? 'شروع آزمون ناموفق بود' : 'شروع درس ناموفق بود');
 
-  Future<void> _startQuiz() async {
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      final unit = await _curriculum.getUnit(widget.node.id);
-      if (unit.practiceLessons.length > 1) {
-        setState(() {
-          _busy = false;
-          _unit = unit;
-        });
-        return;
-      }
-      final lesson = unit.quizLesson;
-      if (lesson == null) {
-        setState(() {
-          _busy = false;
-          _error = 'درسی برای آزمون یافت نشد';
-        });
-        return;
-      }
-      await _startLesson(unit, lesson);
-    } on ApiException catch (e) {
-      setState(() {
-        _busy = false;
-        _error = e.message;
-      });
-    } catch (_) {
-      setState(() {
-        _busy = false;
-        _error = 'شروع آزمون ناموفق بود';
-      });
-    }
-  }
-
-  Future<void> _pickLesson(UnitDetail unit, UnitLessonSummary lesson) async {
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      await _startLesson(unit, lesson);
-    } on ApiException catch (e) {
-      setState(() {
-        _busy = false;
-        _error = e.message;
-      });
-    } catch (_) {
-      setState(() {
-        _busy = false;
-        _error = 'شروع آزمون ناموفق بود';
-      });
-    }
-  }
-
-  Future<void> _startLesson(UnitDetail unit, UnitLessonSummary lesson) async {
-    final session = await _sessions.startLessonSession(lesson.id);
-    if (!mounted) return;
-    Navigator.pop(context);
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => QuizScreen(
-          unitTitle:
-              unit.practiceLessons.length > 1 ? lesson.title : unit.title,
-          sessionId: session.sessionId,
-          questions: session.exercises,
-          notes: session.notes,
-          energy: session.energy,
-        ),
-      ),
-    );
-  }
+  Future<void> _study() => _run(() async {
+        final unit = await _curriculum.getUnit(widget.item.unitId);
+        if (!mounted) return;
+        final navigator = Navigator.of(context);
+        navigator.pop();
+        await navigator.push(
+          MaterialPageRoute<void>(
+            builder: (_) => WordStudyScreen(
+              unitTitle: unit.title,
+              words: unit.words,
+            ),
+          ),
+        );
+      }, 'بارگذاری مطالعه ناموفق بود');
 
   @override
   Widget build(BuildContext context) {
-    final node = widget.node;
-    final onLeaf = AppTheme.chunkyStyle(
+    final item = widget.item;
+    final face = _isExam ? AppColors.grape : AppColors.leaf;
+    final edge = _isExam ? AppColors.grapeDark : AppColors.leafDark;
+    final onFace = AppTheme.chunkyStyle(
       face: Colors.white,
-      edge: AppColors.isDark ? AppColors.leafDark : const Color(0xFFD6EFC6),
-      foreground: AppColors.leafDark,
+      edge: Colors.white.withValues(alpha: 0.7),
+      foreground: edge,
       textStyle: GoogleFonts.vazirmatn(
         fontSize: 16,
         fontWeight: FontWeight.w800,
       ),
     );
+    final subtitle = _isExam
+        ? 'سؤال‌هایی از درس‌های ${item.fromNumber} تا ${item.toNumber}. '
+            'برای قبولی ۷۰٪ لازم است و تا قبول نشوی درس بعدی باز نمی‌شود.'
+        : item.unitTitle;
+    final startLabel = _isExam
+        ? (item.isCompleted ? 'دوباره آزمون بده' : 'شروع آزمون')
+        : (item.isCompleted ? 'تمرین دوباره' : 'شروع درس');
+
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         padding: const EdgeInsets.only(bottom: 5),
         decoration: BoxDecoration(
-          color: AppColors.leafDark,
+          color: edge,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.leaf,
+            color: face,
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
@@ -875,20 +981,21 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                node.title,
+                item.title,
                 style: GoogleFonts.vazirmatn(
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
-                'یونیت ${node.order} · ${node.subtitle}',
+                subtitle,
                 style: GoogleFonts.vazirmatn(
                   fontSize: 13,
+                  height: 1.6,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: Colors.white.withValues(alpha: 0.92),
                 ),
               ),
               if (_error != null) ...[
@@ -910,73 +1017,113 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
                 ),
               ],
               const SizedBox(height: 20),
-              if (_unit != null) ...[
-                Text(
-                  'کدام درس را تمرین کنیم؟',
-                  style: GoogleFonts.vazirmatn(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.4,
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: _unit!.practiceLessons.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, i) {
-                      final lesson = _unit!.practiceLessons[i];
-                      return ElevatedButton(
-                        style: onLeaf,
-                        onPressed:
-                            _busy ? null : () => _pickLesson(_unit!, lesson),
-                        child: Text(
-                          '${i + 1}. ${lesson.title}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
+              ElevatedButton(
+                style: onFace,
+                onPressed: _busy ? null : _start,
+                child: _busy
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: face,
                         ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ] else
-                ElevatedButton(
-                  style: onLeaf,
-                  onPressed: _busy ? null : _startQuiz,
-                  child: _busy
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: AppColors.leaf,
-                          ),
-                        )
-                      : const Text('شروع آزمون'),
-                ),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                style: AppTheme.chunkyStyle(
-                  face: Colors.transparent,
-                  edge: Colors.transparent,
-                  foreground: Colors.white,
-                  border: Colors.white.withValues(alpha: 0.6),
-                  textStyle: GoogleFonts.vazirmatn(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                onPressed: _busy ? null : _startStudy,
-                child: const Text('اول مطالعه کن'),
+                      )
+                    : Text(startLabel),
               ),
+              if (!_isExam) ...[
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  style: AppTheme.chunkyStyle(
+                    face: Colors.transparent,
+                    edge: Colors.transparent,
+                    foreground: Colors.white,
+                    border: Colors.white.withValues(alpha: 0.6),
+                    textStyle: GoogleFonts.vazirmatn(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  onPressed: _busy ? null : _study,
+                  child: const Text('اول واژه‌ها را مطالعه کن'),
+                ),
+              ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChestDialog extends StatelessWidget {
+  const _ChestDialog({required this.rewards});
+
+  final ChestRewards rewards;
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = <(IconData, Color, String)>[
+      if (rewards.energy > 0)
+        (Icons.bolt_rounded, AppColors.sky, '${rewards.energy} انرژی'),
+      if (rewards.gems > 0)
+        (Icons.diamond_rounded, AppColors.grape, '${rewards.gems} الماس'),
+      if (rewards.xp > 0)
+        (Icons.star_rounded, AppColors.sun, '${rewards.xp} امتیاز XP'),
+      if (rewards.streakFreeze > 0)
+        (Icons.ac_unit_rounded, AppColors.skyDark, 'یک یخ‌زدگی استریک'),
+    ];
+    return Dialog(
+      backgroundColor: AppColors.snow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.card_giftcard_rounded,
+              size: 72,
+              color: AppColors.flame,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'جعبه باز شد!',
+              style: GoogleFonts.vazirmatn(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: AppColors.ink,
+              ),
+            ),
+            const SizedBox(height: 16),
+            for (final (icon, color, text) in lines)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: color, size: 26),
+                    const SizedBox(width: 8),
+                    Text(
+                      text,
+                      style: GoogleFonts.vazirmatn(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('عالیه!'),
+              ),
+            ),
+          ],
         ),
       ),
     );

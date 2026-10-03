@@ -1,12 +1,24 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Course } from './entities/course.entity';
 import { Section } from '../sections/entities/section.entity';
 import { Unit } from '../units/entities/unit.entity';
-import { Lesson } from '../lessons/entities/lesson.entity';
+import { Lesson, LessonKind } from '../lessons/entities/lesson.entity';
 import { Word } from '../words/entities/word.entity';
 import { MasteryService } from '../mastery/mastery.service';
+import {
+  LessonSession,
+  LessonSessionKind,
+  LessonSessionStatus,
+} from '../sessions/entities/lesson-session.entity';
+import {
+  PathMilestone,
+  PathMilestoneKind,
+} from '../path/entities/path-milestone.entity';
+import { buildPathItems, PathLessonInput } from '../path/path-items';
+import { pathRules } from '../path/path.config';
 
 @Injectable()
 export class CoursesService {
@@ -21,7 +33,12 @@ export class CoursesService {
     private readonly lessonRepository: Repository<Lesson>,
     @InjectRepository(Word)
     private readonly wordRepository: Repository<Word>,
+    @InjectRepository(LessonSession)
+    private readonly sessionRepository: Repository<LessonSession>,
+    @InjectRepository(PathMilestone)
+    private readonly milestoneRepository: Repository<PathMilestone>,
     private readonly masteryService: MasteryService,
+    private readonly config: ConfigService,
   ) {}
 
   listPublished() {
@@ -90,6 +107,13 @@ export class CoursesService {
       };
     });
 
+    const lessons = this.orderedPathLessons(sortedSections, orderedUnits);
+    const items = buildPathItems(
+      lessons,
+      await this.loadPathProgress(courseId, userId, lessons),
+      pathRules(this.config),
+    );
+
     return {
       course: {
         id: course.id,
@@ -99,7 +123,73 @@ export class CoursesService {
         locale: course.locale,
       },
       nodes: pathNodes,
+      items,
     };
+  }
+
+  /** Every lesson of the course in path order (diagnostics stay off it). */
+  async getPathLessons(courseId: string): Promise<PathLessonInput[]> {
+    const sections = await this.sectionRepository.find({
+      where: { courseId },
+      relations: { units: { lessons: true } },
+    });
+    const sortedSections = sections.sort((a, b) => a.order - b.order);
+    const orderedUnits = sortedSections.flatMap((section) =>
+      (section.units ?? []).slice().sort((a, b) => a.order - b.order),
+    );
+    return this.orderedPathLessons(sortedSections, orderedUnits);
+  }
+
+  async loadPathProgress(
+    courseId: string,
+    userId: string | undefined,
+    lessons: PathLessonInput[],
+  ) {
+    if (!userId || lessons.length === 0) {
+      return {
+        completedLessonIds: new Set<string>(),
+        passedExamPositions: new Set<number>(),
+        openedChestPositions: new Set<number>(),
+      };
+    }
+    const done = await this.sessionRepository.find({
+      select: { lessonId: true },
+      where: {
+        userId,
+        kind: LessonSessionKind.LESSON,
+        status: LessonSessionStatus.COMPLETED,
+        lessonId: In(lessons.map((l) => l.id)),
+      },
+    });
+    const milestones = await this.milestoneRepository.find({
+      where: { userId, courseId, done: true },
+    });
+    const positions = (kind: PathMilestoneKind) =>
+      new Set(milestones.filter((m) => m.kind === kind).map((m) => m.position));
+    return {
+      completedLessonIds: new Set(done.map((s) => s.lessonId)),
+      passedExamPositions: positions(PathMilestoneKind.EXAM),
+      openedChestPositions: positions(PathMilestoneKind.CHEST),
+    };
+  }
+
+  private orderedPathLessons(
+    sections: Section[],
+    units: Array<Unit & { lessons?: Lesson[] }>,
+  ): PathLessonInput[] {
+    return units.flatMap((unit) => {
+      const section = sections.find((s) => s.id === unit.sectionId);
+      return (unit.lessons ?? [])
+        .filter((l) => l.lessonKind !== LessonKind.DIAGNOSTIC)
+        .sort((a, b) => a.order - b.order)
+        .map((l) => ({
+          id: l.id,
+          title: l.title,
+          unitId: unit.id,
+          unitTitle: unit.title,
+          sectionTitle: section?.title ?? null,
+        }));
+    });
   }
 
   async getUnitDetail(unitId: string) {

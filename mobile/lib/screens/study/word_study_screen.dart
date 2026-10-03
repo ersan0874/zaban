@@ -200,93 +200,97 @@ class _WordPage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 28),
-          Text(
-            'مترادف‌ها',
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.rtl,
-            style: GoogleFonts.vazirmatn(
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-              color: AppColors.ink,
+          if (word.synonyms.isNotEmpty) ...[
+            const SizedBox(height: 28),
+            Text(
+              'مترادف‌ها',
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.rtl,
+              style: GoogleFonts.vazirmatn(
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                color: AppColors.ink,
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.end,
-            children: word.synonyms
-                .map(
-                  (s) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.snow,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.line, width: 2),
-                    ),
-                    child: Text(
-                      s,
-                      style: AppTheme.latin(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.inkSoft,
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.end,
+              children: word.synonyms
+                  .map(
+                    (s) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.snow,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.line, width: 2),
+                      ),
+                      child: Text(
+                        s,
+                        style: AppTheme.latin(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.inkSoft,
+                        ),
                       ),
                     ),
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 28),
-          Text(
-            'مثال‌ها',
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.rtl,
-            style: GoogleFonts.vazirmatn(
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-              color: AppColors.ink,
+                  )
+                  .toList(),
             ),
-          ),
-          const SizedBox(height: 12),
-          ...word.examples.map(
-            (example) => Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: AppColors.snow,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.line, width: 2),
+          ],
+          if (word.examples.isNotEmpty) ...[
+            const SizedBox(height: 28),
+            Text(
+              'مثال‌ها',
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.rtl,
+              style: GoogleFonts.vazirmatn(
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                color: AppColors.ink,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    example.english,
-                    style: AppTheme.latin(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
-                    ).copyWith(height: 1.45),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    example.persian,
-                    textDirection: TextDirection.rtl,
-                    style: GoogleFonts.vazirmatn(
-                      fontSize: 14,
-                      height: 1.55,
-                      color: AppColors.slate,
+            ),
+            const SizedBox(height: 12),
+            ...word.examples.map(
+              (example) => Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: AppColors.snow,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.line, width: 2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      example.english,
+                      style: AppTheme.latin(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink,
+                      ).copyWith(height: 1.45),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    Text(
+                      example.persian,
+                      textDirection: TextDirection.rtl,
+                      style: GoogleFonts.vazirmatn(
+                        fontSize: 14,
+                        height: 1.55,
+                        color: AppColors.slate,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

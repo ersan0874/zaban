@@ -29,6 +29,31 @@ describe('question registry', () => {
     expect(order.correct).toBe(false);
   });
 
+  it('accepts a translation typed without the final period or half-space', async () => {
+    const answer = { texts: ['این منطقه به خاطر زیبایی طبیعی‌اش مشهور است.'] };
+    const ctx = { prompt: '', content: {} };
+    for (const typed of [
+      'این منطقه به خاطر زیبایی طبیعی‌اش مشهور است',
+      'اين منطقه به خاطر زيبايي طبيعي اش مشهور است',
+      'این منطقه به خاطر زیبایی طبیعیاش مشهور است!',
+    ]) {
+      const r = await gradeExercise(
+        QuestionType.TRANSLATION,
+        answer,
+        { text: typed },
+        ctx,
+      );
+      expect(r.correct).toBe(true);
+    }
+    const wrong = await gradeExercise(
+      QuestionType.TRANSLATION,
+      answer,
+      { text: 'این منطقه به خاطر زیبایی طبیعی‌اش مشهور نیست' },
+      ctx,
+    );
+    expect(wrong.correct).toBe(false);
+  });
+
   it('grades unknown types as wrong', async () => {
     const r = await gradeExercise('nope', {}, 'x', { prompt: '', content: {} });
     expect(r).toEqual({ correct: false, score: 0, status: 'graded' });

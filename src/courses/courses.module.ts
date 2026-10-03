@@ -9,6 +9,8 @@ import { Lesson } from '../lessons/entities/lesson.entity';
 import { Exercise } from '../exercises/entities/exercise.entity';
 import { Word } from '../words/entities/word.entity';
 import { MasteryModule } from '../mastery/mastery.module';
+import { LessonSession } from '../sessions/entities/lesson-session.entity';
+import { PathMilestone } from '../path/entities/path-milestone.entity';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { MasteryModule } from '../mastery/mastery.module';
       Lesson,
       Exercise,
       Word,
+      LessonSession,
+      PathMilestone,
     ]),
     MasteryModule,
   ],

@@ -309,7 +309,7 @@ export class ContentService {
   async updateLesson(id: string, dto: UpdateDraftLessonDto) {
     const lesson = await this.lessonRepository.findOneBy({ id });
     if (!lesson) throw new NotFoundException('Draft lesson not found');
-    Object.assign(lesson, dto);
+    Object.assign(lesson, definedFields(dto));
     return this.lessonRepository.save(lesson);
   }
 
@@ -336,7 +336,7 @@ export class ContentService {
   async updateExercise(id: string, dto: UpdateDraftExerciseDto) {
     const exercise = await this.exerciseRepository.findOneBy({ id });
     if (!exercise) throw new NotFoundException('Draft exercise not found');
-    Object.assign(exercise, dto);
+    Object.assign(exercise, definedFields(dto));
     const definition = getQuestionDefinition(exercise.type);
     const problems = definition?.validate(exercise) ?? ['unknown type'];
     if (problems.length > 0) {
@@ -536,4 +536,15 @@ export class ContentService {
     }
     return counts;
   }
+}
+
+/**
+ * Partial-update DTOs arrive with every declared property present (unset ones
+ * as `undefined`), so a plain Object.assign would wipe fields the admin did
+ * not send. Keep only the ones that were actually provided.
+ */
+function definedFields<T extends object>(dto: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(dto).filter(([, value]) => value !== undefined),
+  ) as Partial<T>;
 }

@@ -16,6 +16,29 @@ export function normalizeText(value: unknown): string {
   return text.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
+const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+
+/** normalizeText plus one spelling of Persian digits, ye and kaf. */
+export function normalizeLetters(value: unknown): string {
+  return normalizeText(value)
+    .replace(/[۰-۹]/g, (d) => String(PERSIAN_DIGITS.indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String(ARABIC_DIGITS.indexOf(d)))
+    .replace(/[يى]/g, 'ی')
+    .replace(/ك/g, 'ک');
+}
+
+/**
+ * Typed sentences: ignores punctuation, Arabic diacritics and how words are
+ * joined (space, half-space/ZWNJ or nothing), so «طبیعی‌اش» = «طبیعی اش».
+ */
+export function normalizeSentence(value: unknown): string {
+  return normalizeLetters(value)
+    .replace(/[\u064B-\u0652\u0670\u0640]/g, '')
+    .replace(/[.,;:!?،؛؟"'«»()[\]\-–—…]/g, ' ')
+    .replace(/[\s\u200C\u200B\u200F\u200E]+/g, '');
+}
+
 export function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((v) => (typeof v === 'string' ? v : JSON.stringify(v)));
