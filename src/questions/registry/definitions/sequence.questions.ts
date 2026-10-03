@@ -6,6 +6,7 @@ import {
   asStringArray,
   binary,
   isNonEmptyString,
+  normalizeSentence,
   normalizeText,
   shuffle,
 } from '../helpers';
@@ -140,8 +141,8 @@ export const clozeTypingQuestion: QuestionDefinition = {
     return binary(
       keys.every(
         (key) =>
-          normalizeText(expectedBlanks[key]) ===
-          normalizeText(givenBlanks[key]),
+          normalizeSentence(expectedBlanks[key]) ===
+          normalizeSentence(givenBlanks[key]),
       ),
     );
   },

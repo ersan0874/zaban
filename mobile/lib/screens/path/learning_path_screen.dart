@@ -206,6 +206,11 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       barrierColor: AppColors.ink.withValues(alpha: 0.45),
       builder: (context) => _UnitActionSheet(
         node: node,
+        // Energy, hearts and progress change inside a lesson; refresh the
+        // header and path once the learner comes back, however they left.
+        onLessonClosed: () {
+          if (mounted) _loadPath();
+        },
       ),
     );
   }
@@ -723,9 +728,10 @@ class _StartBubble extends StatelessWidget {
 }
 
 class _UnitActionSheet extends StatefulWidget {
-  const _UnitActionSheet({required this.node});
+  const _UnitActionSheet({required this.node, required this.onLessonClosed});
 
   final PathNodeModel node;
+  final VoidCallback onLessonClosed;
 
   @override
   State<_UnitActionSheet> createState() => _UnitActionSheetState();
@@ -827,6 +833,8 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
   }
 
   Future<void> _startLesson(UnitDetail unit, UnitLessonSummary lesson) async {
+    // Captured first: this sheet is closed before the lesson ends.
+    final onClosed = widget.onLessonClosed;
     final session = await _sessions.startLessonSession(lesson.id);
     if (!mounted) return;
     Navigator.pop(context);
@@ -842,6 +850,7 @@ class _UnitActionSheetState extends State<_UnitActionSheet> {
         ),
       ),
     );
+    onClosed();
   }
 
   @override

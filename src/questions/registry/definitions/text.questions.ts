@@ -5,21 +5,17 @@ import {
   asStringArray,
   binary,
   isNonEmptyString,
-  normalizeText,
+  normalizeLetters,
+  normalizeSentence,
   textResponse,
 } from '../helpers';
 
-const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
-const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
-
 /** Looser comparison for short answers: unify digits, drop edge punctuation. */
 function normalizeShort(value: unknown): string {
-  return normalizeText(value)
-    .replace(/[۰-۹]/g, (d) => String(PERSIAN_DIGITS.indexOf(d)))
-    .replace(/[٠-٩]/g, (d) => String(ARABIC_DIGITS.indexOf(d)))
-    .replace(/[ي]/g, 'ی')
-    .replace(/[ك]/g, 'ک')
-    .replace(/^[\s.,;:!?،؛"'«»()]+|[\s.,;:!?،؛"'«»()]+$/g, '');
+  return normalizeLetters(value).replace(
+    /^[\s.,;:!?،؛"'«»()]+|[\s.,;:!?،؛"'«»()]+$/g,
+    '',
+  );
 }
 
 type TranslationItem = {
@@ -58,8 +54,10 @@ export const translationQuestion: QuestionDefinition = {
       : ['needs at least one accepted answer']),
   ],
   grade: (answer, response) => {
-    const accepted = asStringArray(answer.texts).map(normalizeText);
-    const given = normalizeText(textResponse(response, 'text', 'translation'));
+    const accepted = asStringArray(answer.texts).map(normalizeSentence);
+    const given = normalizeSentence(
+      textResponse(response, 'text', 'translation'),
+    );
     return binary(accepted.length > 0 && accepted.includes(given));
   },
 };
@@ -70,8 +68,10 @@ export const speakingQuestion: QuestionDefinition = {
   validate: ({ answer }) =>
     isNonEmptyString(answer.text) ? [] : ['answer.text is empty'],
   grade: (answer, response) => {
-    const expected = normalizeText(answer.text);
-    const given = normalizeText(textResponse(response, 'text', 'transcript'));
+    const expected = normalizeSentence(answer.text);
+    const given = normalizeSentence(
+      textResponse(response, 'text', 'transcript'),
+    );
     return binary(expected.length > 0 && expected === given);
   },
 };
